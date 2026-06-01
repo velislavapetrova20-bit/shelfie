@@ -49,10 +49,10 @@
   .shelf { background: #2A1F14; border-radius: 4px; padding: 2.5rem 1rem 0; min-height: 320px; display: flex; align-items: flex-end; gap: 4px; flex-wrap: wrap; border-bottom: 12px solid #1A1108; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative; }
   .shelf::after { content: ''; position: absolute; bottom: -16px; left: -4px; right: -4px; height: 8px; background: #140D06; border-radius: 0 0 4px 4px; }
 
-  .book-spine { width: 72px; border-radius: 3px 3px 0 0; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease; transform-origin: bottom center; flex-shrink: 0; }
+  .book-spine { width: 72px; border-radius: 3px 3px 0 0; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease; transform-origin: bottom center; flex-shrink: 0; overflow: hidden; }
   .book-spine:hover { transform: translateY(-12px) scale(1.04); box-shadow: 4px 0 16px rgba(0,0,0,0.5); z-index: 10; }
-  .book-spine .spine-title { writing-mode: vertical-rl; transform: rotate(180deg); font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.5px; line-height: 1.3; max-height: 85%; padding: 12px 0; }
-  .spine-decoration { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 20px; height: 1px; background: rgba(255,255,255,0.2); }
+  .spine-pattern { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  .book-spine .spine-title { position: relative; z-index: 1; writing-mode: vertical-rl; transform: rotate(180deg); font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.5px; line-height: 1.3; max-height: 85%; padding: 12px 0; }
 
   .add-btn { width: 72px; height: 220px; border: 2px dashed rgba(255,255,255,0.15); border-radius: 3px 3px 0 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 22px; transition: all 0.2s; flex-shrink: 0; }
   .add-btn:hover { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.6); }
@@ -847,6 +847,54 @@ function renderColorPicker(){
   c.appendChild(plusDot);
 }
 
+const SPINE_DESIGNS = ['classic', 'lined', 'panel', 'diamond', 'minimal'];
+
+function getSpineDesignIndex(i) {
+  return (i * 7 + 3) % SPINE_DESIGNS.length;
+}
+
+function getSpinePatternSvg(design) {
+  const light = 'rgba(255,255,255,0.15)';
+  const patterns = {
+    classic: `
+      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="7" y="10" width="58" height="220" fill="none" stroke="${light}" stroke-width="1.5"/>
+        <rect x="11" y="14" width="50" height="212" fill="none" stroke="${light}" stroke-width="0.75"/>
+        <circle cx="36" cy="120" r="9" fill="none" stroke="${light}" stroke-width="1"/>
+        <circle cx="36" cy="120" r="3" fill="${light}"/>
+        <circle cx="11" cy="14" r="1.5" fill="${light}"/>
+        <circle cx="61" cy="14" r="1.5" fill="${light}"/>
+        <circle cx="11" cy="226" r="1.5" fill="${light}"/>
+        <circle cx="61" cy="226" r="1.5" fill="${light}"/>
+      </svg>`,
+    lined: `
+      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="12" y1="22" x2="60" y2="22" stroke="${light}" stroke-width="1"/>
+        <line x1="12" y1="30" x2="60" y2="30" stroke="${light}" stroke-width="1"/>
+        <line x1="12" y1="210" x2="60" y2="210" stroke="${light}" stroke-width="1"/>
+        <line x1="12" y1="218" x2="60" y2="218" stroke="${light}" stroke-width="1"/>
+      </svg>`,
+    panel: `
+      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="14" y="48" width="44" height="144" rx="5" fill="none" stroke="${light}" stroke-width="1.25"/>
+        <rect x="18" y="52" width="36" height="136" rx="3" fill="none" stroke="${light}" stroke-width="0.75"/>
+      </svg>`,
+    diamond: `
+      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="14" y1="78" x2="58" y2="78" stroke="${light}" stroke-width="0.75"/>
+        <line x1="14" y1="86" x2="58" y2="86" stroke="${light}" stroke-width="0.75"/>
+        <polygon points="36,102 46,120 36,138 26,120" fill="none" stroke="${light}" stroke-width="1"/>
+        <line x1="14" y1="154" x2="58" y2="154" stroke="${light}" stroke-width="0.75"/>
+        <line x1="14" y1="162" x2="58" y2="162" stroke="${light}" stroke-width="0.75"/>
+      </svg>`,
+    minimal: `
+      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="18" y1="26" x2="54" y2="26" stroke="${light}" stroke-width="1"/>
+      </svg>`
+  };
+  return patterns[design] || patterns.minimal;
+}
+
 function renderShelf(){
   const shelf = document.getElementById('shelf');
   const addBtn = shelf.querySelector('.add-btn');
@@ -859,7 +907,8 @@ function renderShelf(){
     spine.style.background = book.color;
     spine.style.height = HEIGHTS[i % HEIGHTS.length] + 'px';
     spine.style.boxShadow = 'inset -3px 0 6px rgba(0,0,0,0.25)';
-    spine.innerHTML = `<div class="spine-decoration"></div><span class="spine-title">${book.title}</span>`;
+    const design = SPINE_DESIGNS[getSpineDesignIndex(i)];
+    spine.innerHTML = `${getSpinePatternSvg(design)}<span class="spine-title">${escapeHtml(book.title)}</span>`;
     const titleEl = spine.querySelector('.spine-title');
     if (book.title.length > 35) {
       titleEl.style.fontSize = '9px';
