@@ -342,16 +342,13 @@
     background: #ffffff;
     color: #1a1a1a;
     border-radius: 12px;
-    width: 520px;
+    width: 560px;
     max-width: 94vw;
     border: 1px solid #e8e8e8;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
     overflow: hidden;
   }
   .quiz-close {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
     width: 32px;
     height: 32px;
     border: none;
@@ -364,42 +361,42 @@
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 2;
+    flex-shrink: 0;
   }
   .quiz-close:hover { background: #ebebeb; }
 
   .quiz-header {
-    padding: 2.5rem 2.5rem 1rem;
+    padding: 1.25rem 1.5rem;
     border-bottom: 1px solid #eeeeee;
     display: flex;
-    align-items: flex-start;
     justify-content: space-between;
+    align-items: center;
     gap: 1rem;
   }
   .quiz-book-info { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
   .quiz-spine-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
   .quiz-book-title {
     font-family: 'Playfair Display', serif;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 500;
     color: #1a1a1a;
-    padding-right: 2rem;
   }
-  .quiz-progress-text { font-size: 12px; color: #888888; flex-shrink: 0; padding-top: 2px; }
+  .quiz-header-right { display: flex; align-items: center; flex-shrink: 0; }
+  .quiz-progress-text { font-size: 12px; color: #888888; }
 
   .progress-bar { height: 3px; background: var(--color-background-secondary); }
   .progress-fill { height: 3px; background: #B85C38; transition: width 0.4s ease; }
 
-  .quiz-body { padding: 1.5rem 2.5rem 2rem; min-height: 280px; display: flex; flex-direction: column; }
+  .quiz-body { padding: 2rem 1.5rem; min-height: 280px; display: flex; flex-direction: column; }
   .quiz-body--centered { justify-content: center; }
 
-  .q-type-tag { font-size: 10px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: #B85C38; margin-bottom: 0.75rem; }
+  .q-type-tag { font-size: 11px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: #B85C38; margin-bottom: 0.75rem; }
 
-  .q-text { font-family: 'Playfair Display', serif; font-size: 18px; line-height: 1.5; color: #000000; margin-bottom: 1.5rem; flex: 1; }
+  .q-text { font-family: 'Playfair Display', serif; font-size: 20px; line-height: 1.5; color: #000000; margin-bottom: 1.5rem; flex: 1; }
 
   .answer-area { margin-top: auto; }
 
-  .answer-input { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 12px 14px; border-radius: var(--border-radius-md); border: 1px solid #ddd; background: #f5f5f5; color: #000000; resize: none; min-height: 80px; outline: none; line-height: 1.5; }
+  .answer-input { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 15px; padding: 12px 14px; border-radius: var(--border-radius-md); border: 1px solid #ddd; background: #f5f5f5; color: #000000; resize: none; min-height: 80px; outline: none; line-height: 1.5; }
   .answer-input:focus { border-color: #B85C38; }
 
   .answer-hint { font-size: 12px; color: #666666; margin-top: 6px; margin-bottom: 1rem; }
@@ -413,7 +410,7 @@
     border-radius: 8px;
     background: #f5f5f5;
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
+    font-size: 15px;
     color: #000000;
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
@@ -433,7 +430,11 @@
     border-left: 3px solid #B85C38;
   }
 
-  .quiz-footer { padding: 0 2.5rem 2.5rem; display: flex; align-items: stretch; }
+  .quiz-footer { padding: 0 1.5rem 2rem; display: flex; align-items: stretch; }
+  .quiz-footer .btn-detail-quiz,
+  .results-actions .btn-detail-quiz {
+    font-size: 15px;
+  }
   .btn-skip { font-family: 'DM Sans', sans-serif; font-size: 13px; color: #666666; background: none; border: none; cursor: pointer; padding: 0; }
   .btn-skip:hover { color: #333333; }
 
@@ -469,22 +470,27 @@
     width: 100%;
   }
   .quiz-rate-limit-cat {
-    width: 160px;
-    margin-bottom: 1.5rem;
+    width: 180px;
+    margin: 2rem auto 1.5rem;
   }
   .quiz-rate-limit-title {
     font-family: 'Playfair Display', serif;
     font-style: italic;
-    font-size: 18px;
-    color: #555555;
-    margin: 0 0 0.5rem;
+    font-size: 22px;
+    color: #333333;
+    margin: 0 0 8px;
   }
   .quiz-rate-limit-sub {
     font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    color: #999999;
-    margin: 0 0 1.5rem;
+    font-size: 15px;
+    color: #888888;
+    margin: 0 0 2rem;
     line-height: 1.5;
+  }
+  .quiz-rate-limit .btn-detail-quiz {
+    height: 52px;
+    font-size: 16px;
+    padding: 0 20px;
   }
   .dot-pulse { display: flex; gap: 4px; }
   .dot-pulse span { width: 6px; height: 6px; border-radius: 50%; background: #B85C38; animation: pulse 1.2s infinite; }
@@ -586,13 +592,15 @@
 <!-- QUIZ OVERLAY -->
 <div class="quiz-overlay" id="quizOverlay">
   <div class="quiz-card">
-    <button type="button" class="quiz-close" id="quizCloseBtn" onclick="closeQuiz()" aria-label="Close">&times;</button>
     <div class="quiz-header">
       <div class="quiz-book-info">
         <div class="quiz-spine-dot" id="quizSpineDot"></div>
         <div class="quiz-book-title" id="quizBookTitle"></div>
       </div>
-      <div class="quiz-progress-text" id="quizProgressText"></div>
+      <div class="quiz-header-right">
+        <div class="quiz-progress-text" id="quizProgressText"></div>
+        <button type="button" class="quiz-close" id="quizCloseBtn" onclick="closeQuiz()" aria-label="Close">&times;</button>
+      </div>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
 
@@ -1051,13 +1059,14 @@ function closeDetail() {
 }
 
 function showQuizRateLimit() {
+  document.getElementById('quizProgressText').style.display = 'none';
   document.getElementById('quizProgressText').textContent = '';
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('quizCloseBtn').style.display = 'flex';
   document.getElementById('quizBody').classList.add('quiz-body--centered');
   document.getElementById('quizBody').innerHTML = `
     <div class="quiz-rate-limit">
-      <img class="quiz-rate-limit-cat" src="/assets/sleepy-cat.png" alt="" width="160">
+      <img class="quiz-rate-limit-cat" src="/assets/sleepy-cat.png" alt="" width="180">
       <p class="quiz-rate-limit-title">Taking a little break...</p>
       <p class="quiz-rate-limit-sub">The quiz will be ready in a moment.</p>
       <button class="btn-detail-quiz" type="button" onclick="startQuiz()">Try again</button>
@@ -1075,6 +1084,7 @@ async function startQuiz() {
 
   document.getElementById('quizSpineDot').style.background = currentBook.color;
   document.getElementById('quizBookTitle').textContent = currentBook.title;
+  document.getElementById('quizProgressText').style.display = '';
   document.getElementById('quizProgressText').textContent = 'Generating...';
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('quizCloseBtn').style.display = 'none';
