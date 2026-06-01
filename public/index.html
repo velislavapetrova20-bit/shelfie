@@ -102,9 +102,10 @@
     padding: 2.5rem;
     width: 100%;
     max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
     border: 1px solid #e8e8e8;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
-    overflow: hidden;
   }
   .detail-color-bar {
     position: absolute;
@@ -135,9 +136,9 @@
   .detail-close:hover { background: #ebebeb; }
   .detail-columns {
     display: grid;
-    grid-template-columns: 60% 40%;
+    grid-template-columns: 65% 35%;
     gap: 2rem;
-    align-items: stretch;
+    align-items: start;
   }
   .detail-left {
     min-width: 0;
@@ -271,28 +272,26 @@
   }
   .detail-right {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    align-self: stretch;
-    min-height: 100%;
-    padding: 0;
+    padding: 2rem;
     width: 100%;
   }
   .book-cover-wrap {
     position: relative;
     perspective: 900px;
-    width: 100%;
-    max-width: 100%;
-    min-height: 300px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    width: 180px;
+    max-width: 180px;
   }
   .book-cover-img {
-    width: 100%;
-    max-width: 100%;
-    min-height: 300px;
-    object-fit: cover;
+    width: 180px;
+    max-width: 180px;
+    max-height: 280px;
+    height: auto;
+    object-fit: contain;
     border-radius: 2px 6px 6px 2px;
     box-shadow:
       6px 12px 28px rgba(0, 0, 0, 0.22),
@@ -301,9 +300,10 @@
     display: none;
   }
   .book-cover-mockup {
-    width: 100%;
-    max-width: 100%;
-    min-height: 300px;
+    width: 180px;
+    max-width: 180px;
+    max-height: 280px;
+    aspect-ratio: 2 / 3;
     border-radius: 2px 6px 6px 2px;
     box-shadow:
       6px 12px 28px rgba(0, 0, 0, 0.22),
@@ -337,10 +337,8 @@
     .detail-columns {
       grid-template-columns: 1fr;
     }
-    .detail-right { order: -1; justify-content: flex-start; }
-    .book-cover-wrap { margin: 0 auto; max-width: 220px; min-height: 280px; }
-    .book-cover-img,
-    .book-cover-mockup { min-height: 280px; }
+    .detail-right { order: -1; justify-content: center; padding: 1.5rem 0 0; }
+    .book-cover-wrap { margin: 0 auto; }
   }
 
   /* QUIZ */
