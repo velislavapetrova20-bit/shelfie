@@ -135,21 +135,22 @@
   .detail-close:hover { background: #ebebeb; }
   .detail-columns {
     display: grid;
-    grid-template-columns: 55% 45%;
+    grid-template-columns: 60% 40%;
     gap: 2rem;
     align-items: stretch;
-    padding-right: 1.5rem;
   }
   .detail-left {
     min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    text-align: left;
   }
   .detail-heading {
     display: flex;
     flex-direction: column;
     gap: 0;
+    text-align: left;
   }
   .detail-title {
     font-family: 'Playfair Display', serif;
@@ -159,11 +160,13 @@
     line-height: 1.2;
     margin: 0;
     padding-right: 2rem;
+    text-align: left;
   }
   .detail-author {
     font-size: 14px;
     color: #888888;
     margin: 0.35rem 0 0;
+    text-align: left;
   }
   .detail-genres {
     display: flex;
@@ -273,17 +276,22 @@
     align-self: stretch;
     min-height: 100%;
     padding: 0;
+    width: 100%;
   }
   .book-cover-wrap {
     position: relative;
     perspective: 900px;
-    padding: 8px;
-    width: 148px;
-    aspect-ratio: 2 / 3;
+    width: 100%;
+    max-width: 100%;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .book-cover-img {
-    width: 148px;
-    aspect-ratio: 2 / 3;
+    width: 100%;
+    max-width: 100%;
+    min-height: 300px;
     object-fit: cover;
     border-radius: 2px 6px 6px 2px;
     box-shadow:
@@ -293,8 +301,9 @@
     display: none;
   }
   .book-cover-mockup {
-    width: 148px;
-    aspect-ratio: 2 / 3;
+    width: 100%;
+    max-width: 100%;
+    min-height: 300px;
     border-radius: 2px 6px 6px 2px;
     box-shadow:
       6px 12px 28px rgba(0, 0, 0, 0.22),
@@ -327,10 +336,11 @@
   @media (max-width: 560px) {
     .detail-columns {
       grid-template-columns: 1fr;
-      padding-right: 0;
     }
     .detail-right { order: -1; justify-content: flex-start; }
-    .book-cover-wrap { margin: 0 auto; }
+    .book-cover-wrap { margin: 0 auto; max-width: 220px; min-height: 280px; }
+    .book-cover-img,
+    .book-cover-mockup { min-height: 280px; }
   }
 
   /* QUIZ */
