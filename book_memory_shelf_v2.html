@@ -14,33 +14,15 @@
 
   .app {
     font-family: 'DM Sans', sans-serif;
-    background: linear-gradient(180deg, #0f0a06 0%, #1a0f07 30%, #2d1a0a 60%, #3d2410 100%);
+    background-color: #1a1208;
+    background-image: url('assets/room-background.png');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
     background-attachment: fixed;
     min-height: 100vh;
     position: relative;
     padding: 2rem;
-  }
-
-  .app::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    background:
-      radial-gradient(ellipse 75% 55% at 8% 6%, rgba(255, 210, 140, 0.2) 0%, rgba(255, 170, 80, 0.06) 35%, transparent 62%),
-      radial-gradient(ellipse 70% 50% at 92% 8%, rgba(255, 195, 110, 0.16) 0%, rgba(255, 150, 70, 0.05) 38%, transparent 60%);
-  }
-
-  .app::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    background:
-      radial-gradient(ellipse 85% 45% at 50% 105%, rgba(255, 150, 60, 0.28) 0%, rgba(200, 100, 40, 0.1) 35%, transparent 68%),
-      radial-gradient(ellipse 40% 25% at 50% 98%, rgba(255, 190, 100, 0.12) 0%, transparent 70%);
   }
 
   .app > * {
