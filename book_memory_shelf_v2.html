@@ -174,9 +174,9 @@
     white-space: nowrap;
   }
   .detail-description {
-    font-size: 14px;
-    line-height: 1.65;
-    color: #333333;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #444444;
     margin: 0;
   }
   .detail-description.loading { color: #999999; font-style: italic; }
@@ -543,6 +543,7 @@ let currentBook = null;
 let currentBookIndex = -1;
 
 const QUIZ_API = '/api/quiz';
+const DESCRIPTION_API = '/api/description';
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
 
 let quizQuestions = [];
@@ -704,19 +705,61 @@ function excerptSentences(text, maxSentences = 2) {
   return sentences.slice(0, maxSentences).join(' ').trim();
 }
 
+function textFromOpenLibraryField(raw) {
+  if (!raw) return '';
+  if (typeof raw === 'string') return raw.trim();
+  if (typeof raw === 'object' && raw.value) return String(raw.value).trim();
+  return '';
+}
+
 function extractDescriptionFromDoc(doc) {
   if (!doc) return '';
-  const raw = doc.description;
-  if (raw) {
-    const text = typeof raw === 'string' ? raw : raw.value || '';
-    const excerpt = excerptSentences(text, 2);
+
+  console.log('Open Library docs[0] fields:', {
+    description: doc.description,
+    first_sentence: doc.first_sentence,
+    subtitle: doc.subtitle,
+    workDescription: doc._work?.description
+  });
+
+  const workText = textFromOpenLibraryField(doc._work?.description);
+  if (workText) {
+    const excerpt = excerptSentences(workText, 2);
     if (excerpt) return excerpt;
   }
-  if (doc.first_sentence?.length) {
-    const fs = doc.first_sentence[0];
-    return typeof fs === 'string' ? fs.trim() : String(fs).trim();
+
+  const descText = textFromOpenLibraryField(doc.description);
+  if (descText) {
+    const excerpt = excerptSentences(descText, 2);
+    if (excerpt) return excerpt;
   }
+
+  if (doc.first_sentence) {
+    const fs = Array.isArray(doc.first_sentence) ? doc.first_sentence[0] : doc.first_sentence;
+    const fsText = typeof fs === 'string' ? fs.trim() : String(fs).trim();
+    if (fsText) return excerptSentences(fsText, 2) || fsText;
+  }
+
+  if (doc.subtitle && typeof doc.subtitle === 'string' && doc.subtitle.trim()) {
+    return doc.subtitle.trim();
+  }
+
   return '';
+}
+
+async function fetchGeminiDescription(book) {
+  const res = await fetch(DESCRIPTION_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: book.title,
+      author: book.author || '',
+      genre: book.genre || ''
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Gemini description failed');
+  return (data.description || '').trim();
 }
 
 function setDetailDescription(text, loading) {
@@ -777,13 +820,28 @@ async function fetchOpenLibraryDoc(book) {
   const params = new URLSearchParams({
     title: book.title,
     limit: '1',
-    fields: 'cover_i,description,first_sentence'
+    fields: 'key,title,author_name,cover_i,first_sentence,subtitle'
   });
   if (book.author) params.set('author', book.author);
-  const res = await fetch(`https://openlibrary.org/search.json?${params}`);
+  const url = `https://openlibrary.org/search.json?${params}`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error('Open Library search failed');
   const data = await res.json();
-  return data.docs?.[0] || null;
+  console.log('Open Library search.json full response:', data);
+
+  const doc = data.docs?.[0] || null;
+  if (doc?.key) {
+    try {
+      const workRes = await fetch(`https://openlibrary.org${doc.key}.json`);
+      if (workRes.ok) {
+        doc._work = await workRes.json();
+        console.log('Open Library work.json for', doc.key, doc._work);
+      }
+    } catch (err) {
+      console.warn('Open Library work fetch failed:', err);
+    }
+  }
+  return doc;
 }
 
 async function loadOpenLibraryDetail(book, index, spineColor) {
@@ -803,7 +861,17 @@ async function loadOpenLibraryDetail(book, index, spineColor) {
   try {
     const doc = await fetchOpenLibraryDoc(book);
     const coverI = doc?.cover_i ?? null;
-    const description = extractDescriptionFromDoc(doc);
+    let description = extractDescriptionFromDoc(doc);
+
+    if (!description) {
+      console.log('No description in Open Library response, trying Gemini fallback');
+      try {
+        description = await fetchGeminiDescription(book);
+        console.log('Gemini fallback description:', description);
+      } catch (err) {
+        console.warn('Gemini description fallback failed:', err);
+      }
+    }
 
     if (coverI != null) {
       book.cachedCoverId = coverI;
@@ -817,12 +885,29 @@ async function loadOpenLibraryDetail(book, index, spineColor) {
 
     if (currentBook === book) {
       applyCoverFromCoverId(book, spineColor, coverI);
-      setDetailDescription(description || book.cachedDescription || '', false);
+      setDetailDescription(description, false);
     }
-  } catch (_) {
+  } catch (err) {
+    console.warn('Open Library detail load failed:', err);
     if (currentBook === book) {
       applyCoverFromCoverId(book, spineColor, book.cachedCoverId ?? null);
-      setDetailDescription(book.cachedDescription || '', false);
+      if (book.cachedDescription) {
+        setDetailDescription(book.cachedDescription, false);
+      } else {
+        try {
+          const description = await fetchGeminiDescription(book);
+          if (description) {
+            book.cachedDescription = description;
+            books[index].cachedDescription = description;
+            saveBooks();
+            setDetailDescription(description, false);
+          } else {
+            setDetailDescription('', false);
+          }
+        } catch {
+          setDetailDescription('', false);
+        }
+      }
     }
   }
 }

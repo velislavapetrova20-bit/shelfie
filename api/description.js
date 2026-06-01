@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.0-flash',
-      systemInstruction: 'Write a 2–3 sentence description of the book for a general reader. Plain text only — no markdown, titles, or labels.',
+      systemInstruction: 'Write exactly 2 sentences describing this book for a general reader. Plain text only — no markdown, titles, or labels.',
     });
     const userMessage = `Book: "${title}"${author ? ' by ' + author : ''}${genre ? '. Genre: ' + genre : ''}`;
     const result = await model.generateContent(userMessage);
