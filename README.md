@@ -14,7 +14,7 @@ A personal book memory shelf — add books, look up details from Open Library, a
 3. **Add your Gemini API key**
    - In the project: **Settings → Environment Variables**
    - Name: `GEMINI_API_KEY`
-   - Value: your key from [Google AI Studio](https://aistudio.google.com/apikey)
+   - Value: paste your key exactly as provided (e.g. starting with `AQ.` — no prefix added by the app)
    - Apply to Production, Preview, and Development
 
 4. **Deploy** — Vercel gives you a public URL like `https://shelfie-xxx.vercel.app`
