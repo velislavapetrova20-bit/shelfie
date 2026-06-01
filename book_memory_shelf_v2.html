@@ -407,6 +407,7 @@
   .toast.show { transform: translateX(-50%) translateY(0); }
 
   .loading-state { display: flex; align-items: center; gap: 8px; color: #666666; font-size: 13px; }
+  .quiz-rate-limit { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 1.25rem; text-align: center; color: #333333; font-size: 14px; line-height: 1.6; }
   .dot-pulse { display: flex; gap: 4px; }
   .dot-pulse span { width: 6px; height: 6px; border-radius: 50%; background: #B85C38; animation: pulse 1.2s infinite; }
   .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
@@ -968,6 +969,17 @@ function closeDetail() {
   document.getElementById('detailOverlay').classList.remove('open');
 }
 
+function showQuizRateLimit() {
+  document.getElementById('quizProgressText').textContent = '';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('quizBody').innerHTML = `
+    <div class="quiz-rate-limit">
+      <p>The quiz is taking a quick break — please try again in a moment.</p>
+      <button class="btn-primary" type="button" onclick="startQuiz()">Try again</button>
+    </div>`;
+  document.getElementById('quizFooter').style.display = 'none';
+}
+
 async function startQuiz() {
   closeDetail();
   quizQuestions = [];
@@ -996,6 +1008,10 @@ async function startQuiz() {
       })
     });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 429) {
+      showQuizRateLimit();
+      return;
+    }
     if (!res.ok) throw new Error(data.error || 'Quiz request failed');
     quizQuestions = data.questions || [];
     if (!quizQuestions.length) throw new Error('No questions returned');

@@ -14,6 +14,11 @@ app.use(express.static(publicDir));
 
 const QUIZ_SYSTEM = `You generate book memory quizzes. Return ONLY valid JSON, no markdown. Format: {"questions":[{"type":"Plot","question":"...","options":["A)...","B)...","C)...","D)..."],"correct":"A","explanation":"..."}]} — exactly 6 questions, last one type Reflection with no options (null).`;
 
+function isRateLimitError(e) {
+  return e.status === 429 ||
+    /429|too many requests|resource_exhausted|rate limit/i.test(e.message || '');
+}
+
 app.post('/api/description', async (req, res) => {
   if (!process.env.GEMINI_API_KEY) {
     return res.status(500).json({ error: 'GEMINI_API_KEY is not configured' });
@@ -55,6 +60,9 @@ app.post('/api/quiz', async (req, res) => {
     res.json(JSON.parse(text));
   } catch (e) {
     console.error('Error:', e.message);
+    if (isRateLimitError(e)) {
+      return res.status(429).json({ error: 'rate_limited' });
+    }
     res.status(500).json({ error: e.message });
   }
 });
