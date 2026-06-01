@@ -1,0 +1,683 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+  }
+
+  .app {
+    font-family: 'DM Sans', sans-serif;
+    background: #2d1a0a url('assets/room-background.png') center / cover no-repeat fixed;
+    min-height: 100vh;
+    position: relative;
+    padding: 2rem;
+  }
+
+  .app::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(26, 15, 5, 0.45) 0%, rgba(26, 15, 5, 0.2) 35%, rgba(26, 15, 5, 0.55) 100%),
+      radial-gradient(ellipse at 15% 60%, rgba(255, 140, 50, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 40%, rgba(255, 120, 30, 0.06) 0%, transparent 45%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .header { margin-bottom: 2.5rem; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5); }
+  .shelf-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45); }
+  .logo { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 600; color: #f0e6d3; letter-spacing: -0.5px; }
+  .logo span { font-style: italic; color: #B85C38; }
+  .book-count { font-size: 13px; color: rgba(240, 230, 210, 0.5); }
+
+  .shelf-label { font-size: 11px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(240, 230, 210, 0.5); }
+  .shelf { background: #2A1F14; border-radius: 4px; padding: 2.5rem 1rem 0; min-height: 320px; display: flex; align-items: flex-end; gap: 4px; flex-wrap: wrap; border-bottom: 12px solid #1A1108; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative; }
+  .shelf::after { content: ''; position: absolute; bottom: -16px; left: -4px; right: -4px; height: 8px; background: #140D06; border-radius: 0 0 4px 4px; }
+
+  .book-spine { width: 72px; border-radius: 3px 3px 0 0; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease; transform-origin: bottom center; flex-shrink: 0; }
+  .book-spine:hover { transform: translateY(-12px) scale(1.04); box-shadow: 4px 0 16px rgba(0,0,0,0.5); z-index: 10; }
+  .book-spine .spine-title { writing-mode: vertical-rl; transform: rotate(180deg); font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: visible; letter-spacing: 0.5px; line-height: 1.3; max-height: 90%; padding: 8px 0; }
+  .spine-decoration { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 20px; height: 1px; background: rgba(255,255,255,0.2); }
+
+  .add-btn { width: 72px; height: 220px; border: 2px dashed rgba(255,255,255,0.15); border-radius: 3px 3px 0 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 22px; transition: all 0.2s; flex-shrink: 0; }
+  .add-btn:hover { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.6); }
+
+  .empty-hint { width: 36px; height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: rgba(255,255,255,0.2); font-size: 11px; text-align: center; gap: 6px; }
+
+  /* MODAL */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+  .overlay.open { display: flex; }
+  .modal { background: #ffffff; color: #000000; border-radius: var(--border-radius-lg); padding: 2rem; width: 420px; max-width: 92vw; border: 0.5px solid var(--color-border-tertiary); }
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; color: #000000; margin-bottom: 4px; }
+  .modal-sub { font-size: 13px; color: #666666; margin-bottom: 1.5rem; }
+  .field-label { font-size: 12px; font-weight: 500; color: #333333; margin-bottom: 6px; }
+  .field-label span { font-weight: 400; color: #888888; }
+  input[type="text"], textarea { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 10px 12px; border-radius: var(--border-radius-md); border: 1px solid #ddd; background: #f5f5f5; color: #000000; margin-bottom: 1rem; outline: none; resize: vertical; }
+  input[type="text"]:focus, textarea:focus { border-color: #B85C38; }
+  textarea { min-height: 80px; font-size: 13px; }
+  .file-upload-label {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1.5px dashed #ccc;
+    background: #f5f5f5;
+    color: #888;
+    font-size: 13px;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .file-upload-label:hover { border-color: #B85C38; color: #B85C38; }
+  .color-options { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s; }
+  .color-dot:hover { transform: scale(1.1); }
+  .color-dot.selected { border-color: #000000; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-secondary { font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 9px 18px; border-radius: var(--border-radius-md); border: 1px solid #ddd; background: #ffffff; color: #333333; cursor: pointer; }
+  .btn-primary { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; padding: 9px 20px; border-radius: var(--border-radius-md); border: none; background: #B85C38; color: #fff; cursor: pointer; }
+  .btn-primary:hover { background: #9A4A2C; }
+  .lookup-btn { width: 100%; margin-top: -0.5rem; margin-bottom: 1rem; }
+
+  /* DETAIL */
+  .detail-modal { background: #ffffff; color: #000000; border-radius: var(--border-radius-lg); padding: 2rem; width: 480px; max-width: 92vw; border: 0.5px solid var(--color-border-tertiary); }
+  .detail-top { display: flex; gap: 1.25rem; margin-bottom: 1.5rem; align-items: flex-start; }
+  .detail-spine { width: 48px; flex-shrink: 0; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+  .detail-spine .spine-title { writing-mode: vertical-rl; transform: rotate(180deg); font-family: 'Playfair Display', serif; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; max-height: 90%; padding: 8px 0; }
+  .detail-meta h2 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; color: #000000; margin-bottom: 4px; }
+  .detail-meta .author { font-size: 13px; color: #666666; margin-bottom: 10px; }
+  .genre-tag { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: #f5f5f5; color: #333333; border: 1px solid #ddd; }
+  .detail-section { margin-bottom: 1.25rem; }
+  .detail-section-label { font-size: 11px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: #888888; margin-bottom: 6px; }
+  .detail-notes { font-size: 13px; color: #333333; line-height: 1.6; font-style: italic; }
+  .detail-actions { display: flex; gap: 10px; margin-top: 1.5rem; }
+
+  /* QUIZ */
+  .quiz-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; }
+  .quiz-overlay.open { display: flex; }
+
+  .quiz-card { background: #ffffff; color: #000000; border-radius: var(--border-radius-lg); width: 520px; max-width: 94vw; border: 0.5px solid var(--color-border-tertiary); overflow: hidden; }
+
+  .quiz-header { padding: 1.25rem 1.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; justify-content: space-between; }
+  .quiz-book-info { display: flex; align-items: center; gap: 10px; }
+  .quiz-spine-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .quiz-book-title { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600; color: #000000; }
+  .quiz-progress-text { font-size: 12px; color: #666666; }
+
+  .progress-bar { height: 3px; background: var(--color-background-secondary); }
+  .progress-fill { height: 3px; background: #B85C38; transition: width 0.4s ease; }
+
+  .quiz-body { padding: 2rem 1.5rem; min-height: 280px; display: flex; flex-direction: column; }
+
+  .q-type-tag { font-size: 10px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: #B85C38; margin-bottom: 0.75rem; }
+
+  .q-text { font-family: 'Playfair Display', serif; font-size: 18px; line-height: 1.5; color: #000000; margin-bottom: 1.5rem; flex: 1; }
+
+  .answer-area { margin-top: auto; }
+
+  .answer-input { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 12px 14px; border-radius: var(--border-radius-md); border: 1px solid #ddd; background: #f5f5f5; color: #000000; resize: none; min-height: 80px; outline: none; line-height: 1.5; }
+  .answer-input:focus { border-color: #B85C38; }
+
+  .answer-hint { font-size: 12px; color: #666666; margin-top: 6px; margin-bottom: 1rem; }
+
+  .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-option {
+    width: 100%;
+    text-align: left;
+    padding: 12px 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #f5f5f5;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #000000;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .quiz-option:hover:not(:disabled) { border-color: #B85C38; background: #fff; }
+  .quiz-option:disabled { cursor: default; opacity: 1; }
+  .quiz-option.correct { background: #EAF3DE; border-color: #639922; color: #27500A; }
+  .quiz-option.wrong { background: #FCE8E8; border-color: #A32D2D; color: #5c1a1a; }
+  .quiz-explanation {
+    margin-top: 1rem;
+    font-size: 13px;
+    color: #333333;
+    line-height: 1.6;
+    padding: 12px 14px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border-left: 3px solid #B85C38;
+  }
+
+  .quiz-footer { padding: 1rem 1.5rem; border-top: 0.5px solid var(--color-border-tertiary); display: flex; justify-content: flex-end; align-items: center; }
+  .btn-skip { font-family: 'DM Sans', sans-serif; font-size: 13px; color: #666666; background: none; border: none; cursor: pointer; padding: 0; }
+  .btn-skip:hover { color: #333333; }
+  .btn-next { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; padding: 10px 24px; border-radius: var(--border-radius-md); border: none; background: #B85C38; color: #fff; cursor: pointer; }
+  .btn-next:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* FEEDBACK */
+  .feedback-card { padding: 1rem 1.25rem; border-radius: var(--border-radius-md); margin-top: 1rem; font-size: 13px; line-height: 1.6; }
+  .feedback-card.correct { background: #EAF3DE; color: #27500A; border: 0.5px solid #C0DD97; }
+  .feedback-card.partial { background: #FAEEDA; color: #633806; border: 0.5px solid #FAC775; }
+  .feedback-card.reflection { background: #f5f5f5; color: #333333; border: 1px solid #ddd; }
+
+  /* RESULTS */
+  .results-body { padding: 2rem 1.5rem; text-align: center; }
+  .results-score { font-family: 'Playfair Display', serif; font-size: 52px; font-weight: 600; color: #B85C38; line-height: 1; margin-bottom: 4px; }
+  .results-label { font-size: 13px; color: #666666; margin-bottom: 1.5rem; }
+  .results-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600; color: #000000; margin-bottom: 8px; }
+  .results-sub { font-size: 14px; color: #333333; line-height: 1.6; margin-bottom: 1.5rem; }
+  .results-breakdown { text-align: left; border-top: 0.5px solid var(--color-border-tertiary); padding-top: 1.25rem; margin-bottom: 1.5rem; }
+  .breakdown-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; font-size: 13px; color: #333333; line-height: 1.5; }
+  .breakdown-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .results-actions { display: flex; gap: 10px; justify-content: center; }
+
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px); background: #2A1F14; color: #fff; font-size: 13px; padding: 10px 20px; border-radius: var(--border-radius-md); transition: transform 0.3s ease; z-index: 300; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .loading-state { display: flex; align-items: center; gap: 8px; color: #666666; font-size: 13px; }
+  .dot-pulse { display: flex; gap: 4px; }
+  .dot-pulse span { width: 6px; height: 6px; border-radius: 50%; background: #B85C38; animation: pulse 1.2s infinite; }
+  .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,80%,100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+</style>
+
+<div class="app">
+  <h2 class="sr-only">Shelfie — your personal book memory companion</h2>
+  <div class="header">
+    <div class="logo">Shelf<span>ie</span></div>
+  </div>
+  <div>
+    <div class="shelf-header">
+      <div class="shelf-label">Your shelf</div>
+      <div class="book-count" id="bookCount">0 books on your shelf</div>
+    </div>
+    <div class="shelf" id="shelf">
+      <div class="empty-hint" id="emptyHint" style="display:flex">
+        <span style="font-size:20px;opacity:0.4">📚</span>
+        <span>Add your first book</span>
+      </div>
+      <button class="add-btn" onclick="openAddModal()" aria-label="Add a book">+</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="overlay" id="addOverlay">
+  <div class="modal">
+    <div class="modal-title">Add a book</div>
+    <div class="modal-sub">Look up a title or enter your own details</div>
+    <div class="field-label">Title <span>*</span></div>
+    <input type="text" id="inputTitle" placeholder="e.g. Pride and Prejudice" />
+    <button type="button" class="btn-secondary lookup-btn" id="lookupBtn" onclick="lookupBookInfo()">Look up from Open Library</button>
+    <div class="field-label">Author <span>optional</span></div>
+    <input type="text" id="inputAuthor" placeholder="e.g. Mikhail Bulgakov" />
+    <div class="field-label">Genre <span>optional</span></div>
+    <input type="text" id="inputGenre" placeholder="e.g. Fiction, Memoir, Sci-Fi..." />
+    <div class="field-label">Your notes <span>optional</span></div>
+    <textarea id="iNotes" placeholder="What stuck with you? Quotes, feelings, moments..."></textarea>
+    <div class="field-label">Upload a file <span>optional — PDF, EPUB, or text with your notes</span></div>
+    <label class="file-upload-label" id="fileLabel">
+      <input type="file" id="iFile" accept=".pdf,.txt,.doc,.docx,.epub,application/epub+zip" style="display:none" onchange="handleFileUpload(event)" />
+      <span id="fileLabelText">Choose a file (PDF, EPUB, TXT, DOC)</span>
+    </label>
+    <div class="field-label" style="margin-bottom:8px">Spine color</div>
+    <div class="color-options" id="colorOptions"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-primary" onclick="addBook()">Add to shelf</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detailOverlay">
+  <div class="detail-modal">
+    <div class="detail-top">
+      <div class="detail-spine" id="detailSpine"><span class="spine-title" id="detailSpineTitle"></span></div>
+      <div class="detail-meta">
+        <h2 id="detailTitle"></h2>
+        <div class="author" id="detailAuthor"></div>
+        <span class="genre-tag" id="detailGenre"></span>
+      </div>
+    </div>
+    <div class="detail-section" id="detailNotesSection">
+      <div class="detail-section-label">Your notes</div>
+      <div class="detail-notes" id="detailNotes"></div>
+    </div>
+    <div class="detail-actions">
+      <button class="btn-primary" style="flex:1" onclick="startQuiz()">Take the memory quiz</button>
+      <button class="btn-secondary" onclick="closeDetail()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ OVERLAY -->
+<div class="quiz-overlay" id="quizOverlay">
+  <div class="quiz-card">
+    <div class="quiz-header">
+      <div class="quiz-book-info">
+        <div class="quiz-spine-dot" id="quizSpineDot"></div>
+        <div class="quiz-book-title" id="quizBookTitle"></div>
+      </div>
+      <div class="quiz-progress-text" id="quizProgressText"></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+    <div class="quiz-body" id="quizBody">
+      <div class="loading-state">
+        <div class="dot-pulse"><span></span><span></span><span></span></div>
+        <span>Generating your quiz...</span>
+      </div>
+    </div>
+
+    <div class="quiz-footer" id="quizFooter" style="display:none">
+      <button class="btn-next" id="nextBtn" type="button">Next question →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const COLORS = [
+  {bg:'#B85C38'},{bg:'#3B5C8A'},{bg:'#4A7C59'},{bg:'#7B4F8E'},
+  {bg:'#8A6A3B'},{bg:'#5C3A3A'},{bg:'#3A5C5C'},{bg:'#2A2A2A'}
+];
+const HEIGHTS = [220, 240, 260, 230, 250, 265, 235, 255];
+
+let books = JSON.parse(localStorage.getItem('shelfie_books2') || '[]');
+let selectedColor = COLORS[0].bg;
+let currentBook = null;
+let currentBookIndex = -1;
+
+const QUIZ_API = '/api/quiz';
+const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
+
+let quizQuestions = [];
+let currentQ = 0;
+let answers = [];
+let feedbackShown = false;
+let quizScores = [];
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function normalizeLetter(val) {
+  if (!val) return '';
+  return String(val).trim().toUpperCase().charAt(0);
+}
+
+function saveBooks(){ localStorage.setItem('shelfie_books2', JSON.stringify(books)); }
+
+async function lookupBookInfo() {
+  const title = document.getElementById('inputTitle').value.trim();
+  if (!title) {
+    document.getElementById('inputTitle').focus();
+    showToast('Enter a title to look up');
+    return;
+  }
+
+  const btn = document.getElementById('lookupBtn');
+  btn.disabled = true;
+  btn.textContent = 'Looking up…';
+
+  try {
+    const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&limit=1&fields=title,author_name,subject,first_sentence`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Lookup failed');
+    const data = await res.json();
+    const doc = data.docs?.[0];
+    if (!doc) {
+      showToast('No match found — fill in details manually');
+      return;
+    }
+
+    if (doc.title) document.getElementById('inputTitle').value = doc.title;
+    if (doc.author_name?.length) {
+      document.getElementById('inputAuthor').value = doc.author_name.slice(0, 3).join(', ');
+    }
+    if (doc.subject?.length) {
+      document.getElementById('inputGenre').value = doc.subject.slice(0, 3).join(', ');
+    }
+    const snippet = doc.first_sentence?.[0];
+    const notesEl = document.getElementById('iNotes');
+    if (snippet && !notesEl.value.trim()) {
+      notesEl.value = typeof snippet === 'string' ? snippet : String(snippet);
+    }
+    showToast('Filled from Open Library');
+  } catch (e) {
+    showToast('Could not reach Open Library — try again');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Look up from Open Library';
+  }
+}
+
+function renderColorPicker(){
+  const c = document.getElementById('colorOptions');
+  c.innerHTML = '';
+  COLORS.forEach(col => {
+    const d = document.createElement('div');
+    d.className = 'color-dot' + (col.bg === selectedColor ? ' selected' : '');
+    d.style.background = col.bg;
+    d.onclick = () => { selectedColor = col.bg; renderColorPicker(); };
+    c.appendChild(d);
+  });
+}
+
+function renderShelf(){
+  const shelf = document.getElementById('shelf');
+  const addBtn = shelf.querySelector('.add-btn');
+  shelf.querySelectorAll('.book-spine').forEach(el => el.remove());
+  const emptyHint = document.getElementById('emptyHint');
+  emptyHint.style.display = books.length === 0 ? 'flex' : 'none';
+  books.forEach((book, i) => {
+    const spine = document.createElement('div');
+    spine.className = 'book-spine';
+    spine.style.background = book.color;
+    spine.style.height = HEIGHTS[i % HEIGHTS.length] + 'px';
+    spine.style.boxShadow = 'inset -3px 0 6px rgba(0,0,0,0.25)';
+    spine.innerHTML = `<div class="spine-decoration"></div><span class="spine-title">${book.title}</span>`;
+    spine.onclick = () => openDetail(i);
+    shelf.insertBefore(spine, addBtn);
+  });
+  document.getElementById('bookCount').textContent =
+    books.length === 0 ? '0 books on your shelf' :
+    books.length === 1 ? '1 book on your shelf' : `${books.length} books on your shelf`;
+}
+
+function openAddModal(){
+  ['inputTitle','inputAuthor','inputGenre','iNotes'].forEach(id => document.getElementById(id).value = '');
+  const fileInput = document.getElementById('iFile');
+  if (fileInput) fileInput.value = '';
+  const fileLabelText = document.getElementById('fileLabelText');
+  if (fileLabelText) fileLabelText.textContent = 'Choose a file (PDF, EPUB, TXT, DOC)';
+  selectedColor = COLORS[Math.floor(Math.random()*COLORS.length)].bg;
+  renderColorPicker();
+  document.getElementById('addOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('inputTitle').focus(), 100);
+}
+function closeAddModal(){ document.getElementById('addOverlay').classList.remove('open'); }
+
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  document.getElementById('fileLabelText').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const existing = document.getElementById('iNotes').value.trim();
+    if (!existing) {
+      document.getElementById('iNotes').value = e.target.result.slice(0, 2000);
+    }
+  };
+  if (file.type === 'text/plain') reader.readAsText(file);
+}
+
+function addBook(){
+  const title = document.getElementById('inputTitle').value.trim();
+  if(!title){ document.getElementById('inputTitle').focus(); return; }
+  books.push({
+    title,
+    author: document.getElementById('inputAuthor').value.trim(),
+    genre: document.getElementById('inputGenre').value.trim(),
+    notes: document.getElementById('iNotes').value.trim(),
+    uploadedFileName: document.getElementById('iFile').files[0]?.name || '',
+    color: selectedColor,
+    added: Date.now()
+  });
+  saveBooks(); renderShelf(); closeAddModal();
+  showToast(`"${title}" added to your shelf`);
+}
+
+function openDetail(i){
+  currentBook = books[i];
+  currentBookIndex = i;
+  document.getElementById('detailTitle').textContent = currentBook.title;
+  document.getElementById('detailAuthor').textContent = currentBook.author || 'Unknown author';
+  document.getElementById('detailGenre').textContent = currentBook.genre || 'Book';
+  document.getElementById('detailSpineTitle').textContent = currentBook.title;
+  const ds = document.getElementById('detailSpine');
+  ds.style.background = currentBook.color;
+  ds.style.height = HEIGHTS[i % HEIGHTS.length] + 'px';
+  const ns = document.getElementById('detailNotesSection');
+  if(currentBook.notes){
+    document.getElementById('detailNotes').textContent = currentBook.notes;
+    ns.style.display = 'block';
+  } else { ns.style.display = 'none'; }
+  document.getElementById('detailOverlay').classList.add('open');
+}
+function closeDetail(){ document.getElementById('detailOverlay').classList.remove('open'); }
+
+async function startQuiz() {
+  closeDetail();
+  quizQuestions = [];
+  currentQ = 0;
+  answers = [];
+  quizScores = [];
+  feedbackShown = false;
+
+  document.getElementById('quizSpineDot').style.background = currentBook.color;
+  document.getElementById('quizBookTitle').textContent = currentBook.title;
+  document.getElementById('quizProgressText').textContent = 'Generating...';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('quizBody').innerHTML = `<div class="loading-state"><div class="dot-pulse"><span></span><span></span><span></span></div><span>Generating your quiz...</span></div>`;
+  document.getElementById('quizFooter').style.display = 'none';
+  document.getElementById('quizOverlay').classList.add('open');
+
+  try {
+    const res = await fetch(QUIZ_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: currentBook.title,
+        author: currentBook.author || '',
+        genre: currentBook.genre || '',
+        notes: currentBook.notes || ''
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Quiz request failed');
+    quizQuestions = data.questions || [];
+    if (!quizQuestions.length) throw new Error('No questions returned');
+    renderQuestion();
+  } catch (e) {
+    document.getElementById('quizBody').innerHTML = `<div style="color:#333;font-size:14px;line-height:1.6">Could not load the quiz. ${escapeHtml(e.message)}</div>`;
+    document.getElementById('quizFooter').style.display = 'none';
+  }
+}
+
+function isReflectionQuestion(q) {
+  return q.type === 'Reflection' || !q.options || q.options === null;
+}
+
+function showQuizFooter(showNext) {
+  const footer = document.getElementById('quizFooter');
+  const btn = document.getElementById('nextBtn');
+  footer.style.display = 'flex';
+  if (showNext) {
+    btn.textContent = currentQ < quizQuestions.length - 1 ? 'Next question →' : 'See results';
+    btn.onclick = goNextQuestion;
+    btn.disabled = false;
+  } else {
+    btn.textContent = 'Submit answer';
+    btn.onclick = submitReflection;
+    btn.disabled = false;
+  }
+}
+
+function hideQuizFooter() {
+  document.getElementById('quizFooter').style.display = 'none';
+}
+
+function renderQuestion() {
+  if (currentQ >= quizQuestions.length) { showResults(); return; }
+
+  const q = quizQuestions[currentQ];
+  const progress = Math.round((currentQ / quizQuestions.length) * 100);
+  document.getElementById('progressFill').style.width = progress + '%';
+  document.getElementById('quizProgressText').textContent = `${currentQ + 1} of ${quizQuestions.length}`;
+  feedbackShown = false;
+  hideQuizFooter();
+
+  if (isReflectionQuestion(q)) {
+    document.getElementById('quizBody').innerHTML = `
+      <div class="q-type-tag">${escapeHtml(q.type)}</div>
+      <div class="q-text">${escapeHtml(q.question)}</div>
+      <div class="answer-area" id="answerArea">
+        <textarea class="answer-input" id="answerInput" placeholder="Take your time — there's no wrong answer here."></textarea>
+        <div class="answer-hint">This is open-ended — write whatever comes to mind.</div>
+      </div>`;
+    showQuizFooter(false);
+    const input = document.getElementById('answerInput');
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.metaKey && !feedbackShown) { e.preventDefault(); submitReflection(); }
+    });
+    return;
+  }
+
+  const optionsHtml = (q.options || []).map((opt, i) => `
+    <button type="button" class="quiz-option" data-index="${i}" onclick="selectOption(${i})">${escapeHtml(opt)}</button>
+  `).join('');
+
+  document.getElementById('quizBody').innerHTML = `
+    <div class="q-type-tag">${escapeHtml(q.type)}</div>
+    <div class="q-text">${escapeHtml(q.question)}</div>
+    <div class="answer-area" id="answerArea">
+      <div class="quiz-options">${optionsHtml}</div>
+    </div>`;
+}
+
+function selectOption(index) {
+  if (feedbackShown) return;
+
+  const q = quizQuestions[currentQ];
+  const picked = OPTION_LETTERS[index];
+  const correct = normalizeLetter(q.correct);
+  const isCorrect = picked === correct;
+
+  answers.push(picked);
+  quizScores.push(isCorrect ? 'correct' : 'incorrect');
+  feedbackShown = true;
+
+  document.querySelectorAll('.quiz-option').forEach((btn, i) => {
+    btn.disabled = true;
+    const letter = OPTION_LETTERS[i];
+    if (letter === correct) btn.classList.add('correct');
+    else if (letter === picked) btn.classList.add('wrong');
+  });
+
+  const area = document.getElementById('answerArea');
+  if (q.explanation) {
+    const expl = document.createElement('div');
+    expl.className = 'quiz-explanation';
+    expl.textContent = q.explanation;
+    area.appendChild(expl);
+  }
+
+  showQuizFooter(true);
+}
+
+function submitReflection() {
+  if (feedbackShown) return;
+
+  const input = document.getElementById('answerInput');
+  const text = input ? input.value.trim() : '';
+  if (!text) {
+    input?.focus();
+    return;
+  }
+
+  answers.push(text);
+  quizScores.push(null);
+  feedbackShown = true;
+  input.disabled = true;
+
+  const area = document.getElementById('answerArea');
+  const fb = document.createElement('div');
+  fb.className = 'feedback-card reflection';
+  fb.textContent = "Thanks for reflecting. There's no right or wrong here — this one is all yours.";
+  area.appendChild(fb);
+
+  showQuizFooter(true);
+}
+
+function goNextQuestion() {
+  if (!feedbackShown) return;
+  currentQ++;
+  renderQuestion();
+}
+
+function showResults() {
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('quizProgressText').textContent = 'Done!';
+  document.getElementById('quizFooter').style.display = 'none';
+
+  const scored = quizScores.filter(s => s !== null);
+  const correct = scored.filter(s => s === 'correct').length;
+  const partial = scored.filter(s => s === 'partial').length;
+  const score = scored.length ? Math.round(((correct + partial * 0.5) / scored.length) * 100) : 0;
+
+  let verdict = '';
+  if (score >= 80) verdict = 'This book left a real mark on you.';
+  else if (score >= 55) verdict = 'You remember the shape of it — some details have faded.';
+  else verdict = 'The story is still in there somewhere. Maybe it\'s time for a reread.';
+
+  const breakdown = quizQuestions.map((q, i) => {
+    const s = quizScores[i];
+    const color = s === 'correct' ? '#639922' : s === 'partial' ? '#BA7517' : s === null ? '#888780' : '#A32D2D';
+    const label = s === null ? 'Reflected' : s.charAt(0).toUpperCase() + s.slice(1);
+    return `<div class="breakdown-item"><div class="breakdown-dot" style="background:${color}"></div><div><strong>${escapeHtml(q.type)}</strong> — ${label}</div></div>`;
+  }).join('');
+
+  document.getElementById('quizBody').innerHTML = `
+    <div class="results-body">
+      <div class="results-score">${score}%</div>
+      <div class="results-label">memory score</div>
+      <div class="results-title">${verdict}</div>
+      <div class="results-sub">Based on ${scored.length} scored questions${quizScores.includes(null) ? ' + 1 reflection' : ''}.</div>
+      <div class="results-breakdown">${breakdown}</div>
+      <div class="results-actions">
+        <button class="btn-primary" onclick="startQuiz()">Retry quiz</button>
+        <button class="btn-secondary" onclick="closeQuiz()">Back to shelf</button>
+      </div>
+    </div>`;
+}
+
+function closeQuiz() {
+  document.getElementById('quizOverlay').classList.remove('open');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+document.getElementById('addOverlay').addEventListener('click', e => { if(e.target.id === 'addOverlay') closeAddModal(); });
+document.getElementById('detailOverlay').addEventListener('click', e => { if(e.target.id === 'detailOverlay') closeDetail(); });
+
+renderColorPicker();
+renderShelf();
+</script>
