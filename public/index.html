@@ -104,6 +104,15 @@
     max-width: 680px;
     border: 1px solid #e8e8e8;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+  }
+  .detail-color-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 12px 12px 0 0;
   }
   .detail-close {
     position: absolute;
@@ -166,37 +175,37 @@
     display: inline-block;
     font-size: 13px;
     font-weight: 500;
-    padding: 6px 14px;
+    padding: 5px 12px;
     border-radius: 20px;
-    background: #f5f5f5;
+    background: #f0f0f0;
     color: #444444;
-    border: 1px solid #e0e0e0;
     white-space: nowrap;
   }
   .detail-description {
     font-size: 15px;
     line-height: 1.6;
-    color: #444444;
+    color: #333333;
     margin: 0;
   }
   .detail-description.loading { color: #999999; font-style: italic; }
-  .detail-notes-block { margin: 0; }
+  .detail-notes-block {
+    margin: 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid #eeeeee;
+  }
   .detail-section-label {
     font-size: 11px;
     font-weight: 500;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: #888888;
+    color: #999999;
     margin-bottom: 6px;
   }
   .detail-notes {
     font-size: 15px;
-    color: #333333;
+    color: #555555;
+    font-style: italic;
     line-height: 1.7;
-    background: #fafafa;
-    padding: 12px 14px;
-    border-radius: 8px;
-    border: 1px solid #eeeeee;
   }
   .detail-actions-block {
     display: flex;
@@ -231,7 +240,7 @@
     cursor: pointer;
     text-align: left;
   }
-  .detail-remove-link:hover { color: #666666; }
+  .detail-remove-link:hover { color: #A32D2D; }
   .detail-remove-confirm {
     display: none;
     align-items: center;
@@ -327,7 +336,26 @@
   .quiz-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; }
   .quiz-overlay.open { display: flex; }
 
-  .quiz-card { background: #ffffff; color: #000000; border-radius: var(--border-radius-lg); width: 520px; max-width: 94vw; border: 0.5px solid var(--color-border-tertiary); overflow: hidden; }
+  .quiz-card { position: relative; background: #ffffff; color: #000000; border-radius: var(--border-radius-lg); width: 520px; max-width: 94vw; border: 0.5px solid var(--color-border-tertiary); overflow: hidden; }
+  .quiz-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f5f5f5;
+    color: #333;
+    font-size: 22px;
+    line-height: 1;
+    border-radius: 50%;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  .quiz-close:hover { background: #ebebeb; }
 
   .quiz-header { padding: 1.25rem 1.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; justify-content: space-between; }
   .quiz-book-info { display: flex; align-items: center; gap: 10px; }
@@ -466,6 +494,7 @@
 <!-- DETAIL MODAL -->
 <div class="overlay" id="detailOverlay">
   <div class="detail-modal">
+    <div class="detail-color-bar" id="detailColorBar"></div>
     <button type="button" class="detail-close" onclick="closeDetail()" aria-label="Close">&times;</button>
     <div class="detail-columns">
       <div class="detail-left">
@@ -507,6 +536,7 @@
 <!-- QUIZ OVERLAY -->
 <div class="quiz-overlay" id="quizOverlay">
   <div class="quiz-card">
+    <button type="button" class="quiz-close" id="quizCloseBtn" onclick="closeQuiz()" aria-label="Close">&times;</button>
     <div class="quiz-header">
       <div class="quiz-book-info">
         <div class="quiz-spine-dot" id="quizSpineDot"></div>
@@ -952,6 +982,7 @@ function openDetail(i) {
     books[i].color = spineColor;
     saveBooks();
   }
+  document.getElementById('detailColorBar').style.background = spineColor;
 
   const ns = document.getElementById('detailNotesSection');
   if (currentBook.notes) {
@@ -972,6 +1003,7 @@ function closeDetail() {
 function showQuizRateLimit() {
   document.getElementById('quizProgressText').textContent = '';
   document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('quizCloseBtn').style.display = 'flex';
   document.getElementById('quizBody').innerHTML = `
     <div class="quiz-rate-limit">
       <p>The quiz is taking a quick break — please try again in a moment.</p>
@@ -992,6 +1024,7 @@ async function startQuiz() {
   document.getElementById('quizBookTitle').textContent = currentBook.title;
   document.getElementById('quizProgressText').textContent = 'Generating...';
   document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('quizCloseBtn').style.display = 'none';
   document.getElementById('quizBody').innerHTML = `<div class="loading-state"><div class="dot-pulse"><span></span><span></span><span></span></div><span>Generating your quiz...</span></div>`;
   document.getElementById('quizFooter').style.display = 'none';
   document.getElementById('quizOverlay').classList.add('open');
@@ -1180,6 +1213,7 @@ function showResults() {
 }
 
 function closeQuiz() {
+  document.getElementById('quizCloseBtn').style.display = 'none';
   document.getElementById('quizOverlay').classList.remove('open');
 }
 
