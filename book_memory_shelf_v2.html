@@ -209,8 +209,22 @@
     padding-top: 0.5rem;
   }
   .book-cover-wrap {
+    position: relative;
     perspective: 900px;
     padding: 8px;
+    width: 148px;
+    aspect-ratio: 2 / 3;
+  }
+  .book-cover-img {
+    width: 148px;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 2px 6px 6px 2px;
+    box-shadow:
+      6px 12px 28px rgba(0, 0, 0, 0.22),
+      2px 4px 10px rgba(0, 0, 0, 0.12);
+    transform: rotateY(-10deg) rotateX(3deg);
+    display: none;
   }
   .book-cover-mockup {
     width: 148px;
@@ -410,6 +424,7 @@
       </div>
       <div class="detail-right">
         <div class="book-cover-wrap">
+          <img class="book-cover-img" id="detailCoverImg" alt="" />
           <div class="book-cover-mockup" id="detailCover">
             <div>
               <div class="book-cover-title" id="detailCoverTitle"></div>
@@ -462,7 +477,6 @@ let currentBook = null;
 let currentBookIndex = -1;
 
 const QUIZ_API = '/api/quiz';
-const DESCRIPTION_API = '/api/description';
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
 
 let quizQuestions = [];
@@ -616,42 +630,133 @@ function renderGenrePills(genreStr) {
   el.innerHTML = tags.map(t => `<span class="genre-pill">${escapeHtml(t)}</span>`).join('');
 }
 
-async function loadBookDescription(book, index) {
+function excerptSentences(text, maxSentences = 2) {
+  const cleaned = String(text).replace(/\s+/g, ' ').trim();
+  if (!cleaned) return '';
+  const sentences = cleaned.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g);
+  if (!sentences?.length) return cleaned.slice(0, 280);
+  return sentences.slice(0, maxSentences).join(' ').trim();
+}
+
+function extractDescriptionFromDoc(doc) {
+  if (!doc) return '';
+  const raw = doc.description;
+  if (raw) {
+    const text = typeof raw === 'string' ? raw : raw.value || '';
+    const excerpt = excerptSentences(text, 2);
+    if (excerpt) return excerpt;
+  }
+  if (doc.first_sentence?.length) {
+    const fs = doc.first_sentence[0];
+    return typeof fs === 'string' ? fs.trim() : String(fs).trim();
+  }
+  return '';
+}
+
+function setDetailDescription(text, loading) {
   const descEl = document.getElementById('detailDescription');
-  if (book.cachedDescription) {
-    descEl.textContent = book.cachedDescription;
+  if (loading) {
+    descEl.style.display = 'block';
+    descEl.textContent = 'Loading description…';
+    descEl.classList.add('loading');
+    return;
+  }
+  if (!text?.trim()) {
+    descEl.style.display = 'none';
+    descEl.textContent = '';
     descEl.classList.remove('loading');
     return;
   }
+  descEl.style.display = 'block';
+  descEl.textContent = text;
+  descEl.classList.remove('loading');
+}
 
-  descEl.textContent = 'Loading description…';
-  descEl.classList.add('loading');
+function showCoverMockup(curBook, spineColor) {
+  const mockup = document.getElementById('detailCover');
+  const img = document.getElementById('detailCoverImg');
+  mockup.style.display = 'flex';
+  mockup.style.backgroundColor = spineColor;
+  mockup.style.background = spineColor;
+  document.getElementById('detailCoverTitle').textContent = curBook.title;
+  document.getElementById('detailCoverAuthor').textContent = curBook.author || '';
+  img.style.display = 'none';
+  img.onload = null;
+  img.onerror = null;
+  img.removeAttribute('src');
+}
+
+function applyCoverFromCoverId(curBook, spineColor, coverI) {
+  showCoverMockup(curBook, spineColor);
+  if (!coverI) return;
+
+  const img = document.getElementById('detailCoverImg');
+  const mockup = document.getElementById('detailCover');
+  const url = `https://covers.openlibrary.org/b/id/${coverI}-L.jpg`;
+  img.alt = `Cover of ${curBook.title}`;
+  img.onload = () => {
+    if (currentBook !== curBook) return;
+    img.style.display = 'block';
+    mockup.style.display = 'none';
+  };
+  img.onerror = () => {
+    if (currentBook !== curBook) return;
+    img.style.display = 'none';
+    mockup.style.display = 'flex';
+  };
+  img.src = url;
+}
+
+async function fetchOpenLibraryDoc(book) {
+  const params = new URLSearchParams({
+    title: book.title,
+    limit: '1',
+    fields: 'cover_i,description,first_sentence'
+  });
+  if (book.author) params.set('author', book.author);
+  const res = await fetch(`https://openlibrary.org/search.json?${params}`);
+  if (!res.ok) throw new Error('Open Library search failed');
+  const data = await res.json();
+  return data.docs?.[0] || null;
+}
+
+async function loadOpenLibraryDetail(book, index, spineColor) {
+  showCoverMockup(book, spineColor);
+
+  if (book.cachedDescription) {
+    setDetailDescription(book.cachedDescription, false);
+  } else {
+    setDetailDescription('', true);
+  }
+
+  if (book.cachedCoverId) {
+    applyCoverFromCoverId(book, spineColor, book.cachedCoverId);
+    if (book.cachedDescription) return;
+  }
 
   try {
-    const res = await fetch(DESCRIPTION_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: book.title,
-        author: book.author || '',
-        genre: book.genre || ''
-      })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Could not load description');
+    const doc = await fetchOpenLibraryDoc(book);
+    const coverI = doc?.cover_i ?? null;
+    const description = extractDescriptionFromDoc(doc);
 
-    book.cachedDescription = data.description;
-    books[index].cachedDescription = data.description;
+    if (coverI != null) {
+      book.cachedCoverId = coverI;
+      books[index].cachedCoverId = coverI;
+    }
+    if (description) {
+      book.cachedDescription = description;
+      books[index].cachedDescription = description;
+    }
     saveBooks();
 
     if (currentBook === book) {
-      descEl.textContent = data.description;
-      descEl.classList.remove('loading');
+      applyCoverFromCoverId(book, spineColor, coverI);
+      setDetailDescription(description || book.cachedDescription || '', false);
     }
-  } catch (e) {
+  } catch (_) {
     if (currentBook === book) {
-      descEl.textContent = 'Description unavailable right now.';
-      descEl.classList.remove('loading');
+      applyCoverFromCoverId(book, spineColor, book.cachedCoverId ?? null);
+      setDetailDescription(book.cachedDescription || '', false);
     }
   }
 }
@@ -664,19 +769,13 @@ function openDetail(i) {
   document.getElementById('detailAuthor').textContent = currentBook.author || 'Unknown author';
   renderGenrePills(currentBook.genre);
 
-  const descEl = document.getElementById('detailDescription');
-  if (currentBook.cachedDescription) {
-    descEl.textContent = currentBook.cachedDescription;
-    descEl.classList.remove('loading');
-  } else {
-    descEl.textContent = 'Loading description…';
-    descEl.classList.add('loading');
+  const curBook = currentBook;
+  const spineColor = curBook.color || COLORS[i % COLORS.length].bg;
+  if (!curBook.color) {
+    curBook.color = spineColor;
+    books[i].color = spineColor;
+    saveBooks();
   }
-
-  const cover = document.getElementById('detailCover');
-  cover.style.background = currentBook.color;
-  document.getElementById('detailCoverTitle').textContent = currentBook.title;
-  document.getElementById('detailCoverAuthor').textContent = currentBook.author || '';
 
   const ns = document.getElementById('detailNotesSection');
   if (currentBook.notes) {
@@ -687,7 +786,7 @@ function openDetail(i) {
   }
 
   document.getElementById('detailOverlay').classList.add('open');
-  loadBookDescription(currentBook, i);
+  loadOpenLibraryDetail(curBook, i, spineColor);
 }
 
 function closeDetail() {
