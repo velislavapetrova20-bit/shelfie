@@ -66,16 +66,22 @@
     background: #ffffff;
     color: #000000;
     border-radius: 16px;
-    padding: 2rem;
+    padding: 2rem 2.5rem;
     width: 420px;
     max-width: 92vw;
     border: 1px solid #e8e8e8;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
   }
-  .modal-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; color: #000000; margin-bottom: 4px; }
-  .modal-sub { font-size: 13px; color: #666666; margin-bottom: 1.5rem; }
-  .field-label { font-size: 12px; font-weight: 500; color: #333333; margin-bottom: 6px; }
-  .field-label span { font-weight: 400; color: #888888; }
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: #000000;
+    margin-bottom: 6px;
+  }
+  .modal-sub { font-size: 15px; color: #888888; margin-bottom: 1.5rem; }
+  .modal .field-label { font-size: 14px; font-weight: 500; color: #444444; margin-bottom: 6px; }
+  .modal .field-label span { font-weight: 400; color: #888888; }
   .modal input[type="text"],
   .modal textarea {
     width: 100%;
@@ -90,6 +96,8 @@
     outline: none;
     resize: vertical;
   }
+  .modal input[type="text"]::placeholder,
+  .modal textarea::placeholder { font-size: 15px; }
   .modal input[type="text"]:focus,
   .modal textarea:focus { border-color: #B85C38; }
   .modal textarea { min-height: 80px; }
@@ -132,7 +140,7 @@
     height: 0;
     pointer-events: none;
   }
-  .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+  .modal-actions { display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
   .modal .btn-modal-cancel {
     font-family: 'DM Sans', sans-serif;
     font-size: 15px;
@@ -142,14 +150,17 @@
     background: #ffffff;
     color: #333333;
     cursor: pointer;
+    width: 35%;
+    flex-shrink: 0;
   }
   .modal .btn-modal-submit {
-    width: 100%;
+    width: 65%;
     height: 52px;
     margin: 0;
     padding: 0 20px;
     border-radius: 10px;
     font-size: 15px;
+    flex-shrink: 0;
   }
   .modal .lookup-btn {
     width: 100%;
@@ -629,7 +640,7 @@
       <input type="file" id="iFile" accept=".pdf,.txt,.doc,.docx,.epub,application/epub+zip" style="display:none" onchange="handleFileUpload(event)" />
       <span id="fileLabelText">Choose a file (PDF, EPUB, TXT, DOC)</span>
     </label>
-    <div class="field-label" style="margin-bottom:8px">Spine color</div>
+    <div class="field-label">Spine color</div>
     <div class="color-options" id="colorOptions"></div>
     <div class="modal-actions">
       <button type="button" class="btn-modal-cancel" onclick="closeAddModal()">Cancel</button>
