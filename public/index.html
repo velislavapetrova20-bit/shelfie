@@ -1189,8 +1189,19 @@ function getSpineDesignIndex(i) {
 
 const SPINE_TITLE_ORNAMENT_MAX = 30;
 const SPINE_ORNAMENT_CENTER_X = 36;
-const SPINE_ORNAMENT_TOP_Y = 20;
-const SPINE_ORNAMENT_BOTTOM_Y = 220;
+const SPINE_VIEWBOX_HEIGHT = 240;
+const SPINE_INNER_FRAME_TOP = 11;
+const SPINE_INNER_FRAME_BOTTOM = 229;
+const SPINE_ORNAMENT_HALF_HEIGHT = 7;
+const SPINE_FRAME_GAP_PX = 12;
+
+function getSpineOrnamentYs(spineHeightPx) {
+  const gapVb = SPINE_FRAME_GAP_PX * (SPINE_VIEWBOX_HEIGHT / spineHeightPx);
+  return {
+    top: SPINE_INNER_FRAME_TOP + gapVb + SPINE_ORNAMENT_HALF_HEIGHT,
+    bottom: SPINE_INNER_FRAME_BOTTOM - gapVb - SPINE_ORNAMENT_HALF_HEIGHT
+  };
+}
 const SPINE_FRAME_STROKE = 'rgba(255,255,255,0.35)';
 const SPINE_ORNAMENT = 'rgba(255,255,255,0.35)';
 
@@ -1239,20 +1250,21 @@ function spineOrnamentForDesign(design, cx, cy, flip) {
   }
 }
 
-function spineOrnamentsForDesign(design, titleLength) {
+function spineOrnamentsForDesign(design, titleLength, spineHeightPx) {
+  const { top: topY, bottom: bottomY } = getSpineOrnamentYs(spineHeightPx);
   const alwaysShowBoth = design === 'classic';
   const showBottom = alwaysShowBoth || titleLength <= SPINE_TITLE_ORNAMENT_MAX;
-  const top = spineOrnamentForDesign(design, SPINE_ORNAMENT_CENTER_X, SPINE_ORNAMENT_TOP_Y, false);
+  const top = spineOrnamentForDesign(design, SPINE_ORNAMENT_CENTER_X, topY, false);
   const bottom = showBottom
-    ? spineOrnamentForDesign(design, SPINE_ORNAMENT_CENTER_X, SPINE_ORNAMENT_BOTTOM_Y, true)
+    ? spineOrnamentForDesign(design, SPINE_ORNAMENT_CENTER_X, bottomY, true)
     : '';
   return top + bottom;
 }
 
-function getSpinePatternSvg(design, titleLength) {
+function getSpinePatternSvg(design, titleLength, spineHeightPx) {
   const body = `
     ${spineDoubleBorderFrame(SPINE_FRAME_STROKE)}
-    ${spineOrnamentsForDesign(design, titleLength)}`;
+    ${spineOrnamentsForDesign(design, titleLength, spineHeightPx)}`;
   return `<svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">${body}</svg>`;
 }
 
@@ -1269,9 +1281,10 @@ function renderShelf(){
     spine.style.height = HEIGHTS[i % HEIGHTS.length] + 'px';
     spine.style.boxShadow = 'inset -3px 0 6px rgba(0,0,0,0.25)';
     const design = SPINE_DESIGNS[getSpineDesignIndex(i)];
+    const spineHeightPx = HEIGHTS[i % HEIGHTS.length];
     const titleLen = book.title.length;
     if (titleLen > SPINE_TITLE_ORNAMENT_MAX) spine.classList.add('spine-long-title');
-    spine.innerHTML = `${getSpinePatternSvg(design, titleLen)}<span class="spine-title">${escapeHtml(book.title)}</span>`;
+    spine.innerHTML = `${getSpinePatternSvg(design, titleLen, spineHeightPx)}<span class="spine-title">${escapeHtml(book.title)}</span>`;
     const titleEl = spine.querySelector('.spine-title');
     if (book.title.length > 35) {
       titleEl.style.fontSize = '9px';
