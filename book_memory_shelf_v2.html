@@ -833,6 +833,7 @@ let currentBook = null;
 let currentBookIndex = -1;
 
 const QUIZ_API = '/api/quiz';
+const DESCRIPTION_API = '/api/description';
 const NO_DESCRIPTION_PLACEHOLDER = 'No description available for this book.';
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -1305,6 +1306,39 @@ function extractDescriptionFromDoc(doc) {
   return '';
 }
 
+function descriptionStorageKey(book) {
+  return `desc_${book.title}_${book.author}`;
+}
+
+function getStoredDescription(book) {
+  const cached = localStorage.getItem(descriptionStorageKey(book));
+  return cached ? cached.trim() : '';
+}
+
+function saveStoredDescription(book, description) {
+  localStorage.setItem(descriptionStorageKey(book), description);
+}
+
+async function fetchGeminiDescription(book) {
+  const stored = getStoredDescription(book);
+  if (stored) return stored;
+
+  const res = await fetch(DESCRIPTION_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: book.title,
+      author: book.author || '',
+      genre: book.genre || ''
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Gemini description failed');
+  const description = (data.description || '').trim();
+  if (description) saveStoredDescription(book, description);
+  return description;
+}
+
 function setDetailDescription(text, loading) {
   const descEl = document.getElementById('detailDescription');
   if (loading) {
@@ -1405,7 +1439,14 @@ async function loadOpenLibraryDetail(book, index, spineColor) {
     const doc = await fetchOpenLibraryDoc(book);
     const coverI = doc?.cover_i ?? null;
     let description = extractDescriptionFromDoc(doc);
-    if (!description) description = NO_DESCRIPTION_PLACEHOLDER;
+    if (!description) {
+      try {
+        description = await fetchGeminiDescription(book);
+      } catch (err) {
+        console.warn('Gemini description fallback failed:', err);
+      }
+      if (!description) description = NO_DESCRIPTION_PLACEHOLDER;
+    }
 
     if (coverI != null) {
       book.cachedCoverId = coverI;
@@ -1428,7 +1469,19 @@ async function loadOpenLibraryDetail(book, index, spineColor) {
       if (book.cachedDescription) {
         setDetailDescription(book.cachedDescription, false);
       } else {
-        setDetailDescription(NO_DESCRIPTION_PLACEHOLDER, false);
+        try {
+          const description = await fetchGeminiDescription(book);
+          if (description) {
+            book.cachedDescription = description;
+            books[index].cachedDescription = description;
+            saveBooks();
+            setDetailDescription(description, false);
+          } else {
+            setDetailDescription(NO_DESCRIPTION_PLACEHOLDER, false);
+          }
+        } catch {
+          setDetailDescription(NO_DESCRIPTION_PLACEHOLDER, false);
+        }
       }
     }
   }
