@@ -734,6 +734,8 @@
     <input type="text" id="inputAuthor" placeholder="e.g. Mikhail Bulgakov" />
     <div class="field-label">Genre <span>optional</span></div>
     <input type="text" id="inputGenre" placeholder="e.g. Fiction, Memoir, Sci-Fi..." />
+    <div class="field-label">Description <span>optional</span></div>
+    <textarea id="iDescription" placeholder="Book summary or description..."></textarea>
     <div class="field-label">Your notes <span>optional</span></div>
     <textarea id="iNotes" placeholder="What stuck with you? Quotes, feelings, moments..."></textarea>
     <div class="field-label">Upload a file <span>optional — PDF, EPUB, or text with your notes</span></div>
@@ -910,9 +912,9 @@ async function lookupBookInfo() {
       document.getElementById('inputGenre').value = doc.subject.slice(0, 3).join(', ');
     }
     const snippet = doc.first_sentence?.[0];
-    const notesEl = document.getElementById('iNotes');
-    if (snippet && !notesEl.value.trim()) {
-      notesEl.value = typeof snippet === 'string' ? snippet : String(snippet);
+    const descEl = document.getElementById('iDescription');
+    if (snippet && descEl && !descEl.value.trim()) {
+      descEl.value = typeof snippet === 'string' ? snippet : String(snippet);
     }
     showToast('Filled from Open Library');
   } catch (e) {
@@ -1236,7 +1238,7 @@ function openAddModal(){
   closeDetail();
   editingBookIndex = -1;
   updateAddModalMode();
-  ['inputTitle','inputAuthor','inputGenre','iNotes'].forEach(id => document.getElementById(id).value = '');
+  ['inputTitle','inputAuthor','inputGenre','iDescription','iNotes'].forEach(id => document.getElementById(id).value = '');
   const fileInput = document.getElementById('iFile');
   if (fileInput) fileInput.value = '';
   const fileLabelText = document.getElementById('fileLabelText');
@@ -1257,6 +1259,7 @@ function openEditModal() {
   document.getElementById('inputTitle').value = book.title || '';
   document.getElementById('inputAuthor').value = book.author || '';
   document.getElementById('inputGenre').value = book.genre || '';
+  document.getElementById('iDescription').value = book.description || book.cachedDescription || '';
   document.getElementById('iNotes').value = book.notes || '';
   const fileInput = document.getElementById('iFile');
   if (fileInput) fileInput.value = '';
@@ -1298,6 +1301,7 @@ function addBook(){
   if(!title){ document.getElementById('inputTitle').focus(); return; }
   const author = document.getElementById('inputAuthor').value.trim();
   const genre = document.getElementById('inputGenre').value.trim();
+  const description = document.getElementById('iDescription').value.trim();
   const notes = document.getElementById('iNotes').value.trim();
   const newFileName = document.getElementById('iFile').files[0]?.name || '';
 
@@ -1311,12 +1315,13 @@ function addBook(){
       title,
       author,
       genre,
+      description,
       notes,
       uploadedFileName: newFileName || existing.uploadedFileName || '',
       color: selectedColor
     };
+    delete books[i].cachedDescription;
     if (titleChanged || authorChanged) {
-      delete books[i].cachedDescription;
       delete books[i].cachedCoverId;
     }
     saveBooks();
@@ -1331,6 +1336,7 @@ function addBook(){
     title,
     author,
     genre,
+    description,
     notes,
     uploadedFileName: newFileName,
     color: selectedColor,
@@ -1515,65 +1521,84 @@ async function fetchOpenLibraryDoc(book) {
   return doc;
 }
 
+function getBookDescription(book) {
+  if (book.description?.trim()) return book.description.trim();
+  if (book.cachedDescription?.trim()) return book.cachedDescription.trim();
+  return '';
+}
+
+function setBookDescription(book, index, text) {
+  book.description = text;
+  if (index >= 0) books[index].description = text;
+  delete book.cachedDescription;
+  if (index >= 0) delete books[index].cachedDescription;
+}
+
 async function loadOpenLibraryDetail(book, index, spineColor) {
   showCoverMockup(book, spineColor);
+  const existingDesc = getBookDescription(book);
 
-  if (book.cachedDescription) {
-    setDetailDescription(book.cachedDescription, false);
+  if (existingDesc) {
+    if (!book.description?.trim() && book.cachedDescription) {
+      setBookDescription(book, index, existingDesc);
+      saveBooks();
+    }
+    setDetailDescription(existingDesc, false);
   } else {
     setDetailDescription('', true);
   }
 
   if (book.cachedCoverId) {
     applyCoverFromCoverId(book, spineColor, book.cachedCoverId);
-    if (book.cachedDescription) return;
+    if (existingDesc) return;
   }
 
   try {
     const doc = await fetchOpenLibraryDoc(book);
     const coverI = doc?.cover_i ?? null;
-    let description = extractDescriptionFromDoc(doc);
-    if (!description) {
-      try {
-        description = await fetchGeminiDescription(book);
-      } catch (err) {
-        console.warn('Gemini description fallback failed:', err);
+    let fetchedDesc = '';
+
+    if (!existingDesc) {
+      fetchedDesc = extractDescriptionFromDoc(doc);
+      if (!fetchedDesc) {
+        try {
+          fetchedDesc = await fetchGeminiDescription(book);
+        } catch (err) {
+          console.warn('Gemini description fallback failed:', err);
+        }
+        if (!fetchedDesc) fetchedDesc = NO_DESCRIPTION_PLACEHOLDER;
       }
-      if (!description) description = NO_DESCRIPTION_PLACEHOLDER;
+      setBookDescription(book, index, fetchedDesc);
+      saveBooks();
     }
 
     if (coverI != null) {
       book.cachedCoverId = coverI;
       books[index].cachedCoverId = coverI;
+      saveBooks();
     }
-    if (description) {
-      book.cachedDescription = description;
-      books[index].cachedDescription = description;
-    }
-    saveBooks();
 
     if (currentBook === book) {
       applyCoverFromCoverId(book, spineColor, coverI);
-      setDetailDescription(description, false);
+      if (!existingDesc) setDetailDescription(fetchedDesc, false);
     }
   } catch (err) {
     console.warn('Open Library detail load failed:', err);
     if (currentBook === book) {
       applyCoverFromCoverId(book, spineColor, book.cachedCoverId ?? null);
-      if (book.cachedDescription) {
-        setDetailDescription(book.cachedDescription, false);
+      const savedDesc = getBookDescription(book);
+      if (savedDesc) {
+        setDetailDescription(savedDesc, false);
       } else {
         try {
           const description = await fetchGeminiDescription(book);
-          if (description) {
-            book.cachedDescription = description;
-            books[index].cachedDescription = description;
-            saveBooks();
-            setDetailDescription(description, false);
-          } else {
-            setDetailDescription(NO_DESCRIPTION_PLACEHOLDER, false);
-          }
+          const text = description || NO_DESCRIPTION_PLACEHOLDER;
+          setBookDescription(book, index, text);
+          saveBooks();
+          setDetailDescription(text, false);
         } catch {
+          setBookDescription(book, index, NO_DESCRIPTION_PLACEHOLDER);
+          saveBooks();
           setDetailDescription(NO_DESCRIPTION_PLACEHOLDER, false);
         }
       }
