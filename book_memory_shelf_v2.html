@@ -53,6 +53,7 @@
   .book-spine:hover { transform: translateY(-12px) scale(1.04); box-shadow: 4px 0 16px rgba(0,0,0,0.5); z-index: 10; }
   .spine-pattern { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
   .book-spine .spine-title { position: relative; z-index: 1; writing-mode: vertical-rl; transform: rotate(180deg); font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.5px; line-height: 1.3; max-height: 85%; padding: 12px 0; }
+  .book-spine.spine-long-title .spine-title { max-height: 92%; padding: 8px 0; }
 
   .add-btn { width: 72px; height: 220px; border: 2px dashed rgba(255,255,255,0.15); border-radius: 3px 3px 0 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 22px; transition: all 0.2s; flex-shrink: 0; }
   .add-btn:hover { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.6); }
@@ -1186,8 +1187,45 @@ function getSpineDesignIndex(i) {
   return (i * 7 + 3) % SPINE_DESIGNS.length;
 }
 
-function getSpinePatternSvg(design) {
+const SPINE_TITLE_ORNAMENT_MAX = 20;
+
+function getSpineTopOrnamentSvg(design, light) {
+  const topOrnaments = {
+    classic: `
+      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="12" y1="18" x2="60" y2="18" stroke="${light}" stroke-width="1"/>
+        <line x1="12" y1="26" x2="60" y2="26" stroke="${light}" stroke-width="0.75"/>
+        <circle cx="11" cy="14" r="1.5" fill="${light}"/>
+        <circle cx="61" cy="14" r="1.5" fill="${light}"/>
+      </svg>`,
+    lined: `
+      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="12" y1="22" x2="60" y2="22" stroke="${light}" stroke-width="1"/>
+        <line x1="12" y1="30" x2="60" y2="30" stroke="${light}" stroke-width="1"/>
+      </svg>`,
+    panel: `
+      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="18" y1="26" x2="54" y2="26" stroke="${light}" stroke-width="1"/>
+      </svg>`,
+    diamond: `
+      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="14" y1="78" x2="58" y2="78" stroke="${light}" stroke-width="0.75"/>
+        <line x1="14" y1="86" x2="58" y2="86" stroke="${light}" stroke-width="0.75"/>
+      </svg>`,
+    minimal: `
+      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="18" y1="26" x2="54" y2="26" stroke="${light}" stroke-width="1"/>
+      </svg>`
+  };
+  return topOrnaments[design] || topOrnaments.minimal;
+}
+
+function getSpinePatternSvg(design, titleLength) {
   const light = 'rgba(255,255,255,0.15)';
+  if (titleLength > SPINE_TITLE_ORNAMENT_MAX) {
+    return getSpineTopOrnamentSvg(design, light);
+  }
+
   const patterns = {
     classic: `
       <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
@@ -1241,7 +1279,9 @@ function renderShelf(){
     spine.style.height = HEIGHTS[i % HEIGHTS.length] + 'px';
     spine.style.boxShadow = 'inset -3px 0 6px rgba(0,0,0,0.25)';
     const design = SPINE_DESIGNS[getSpineDesignIndex(i)];
-    spine.innerHTML = `${getSpinePatternSvg(design)}<span class="spine-title">${escapeHtml(book.title)}</span>`;
+    const titleLen = book.title.length;
+    if (titleLen > SPINE_TITLE_ORNAMENT_MAX) spine.classList.add('spine-long-title');
+    spine.innerHTML = `${getSpinePatternSvg(design, titleLen)}<span class="spine-title">${escapeHtml(book.title)}</span>`;
     const titleEl = spine.querySelector('.spine-title');
     if (book.title.length > 35) {
       titleEl.style.fontSize = '9px';
