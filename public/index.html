@@ -1188,80 +1188,98 @@ function getSpineDesignIndex(i) {
 }
 
 const SPINE_TITLE_ORNAMENT_MAX = 20;
+const SPINE_STROKE = 'rgba(255,255,255,0.22)';
+const SPINE_FILL = 'rgba(255,255,255,0.18)';
 
-function getSpineTopOrnamentSvg(design, light) {
+function spineFleurDeLis(cx, cy, stroke, fill, flip) {
+  const g = flip
+    ? `<g transform="translate(${cx},${cy}) scale(1,-1)">`
+    : `<g transform="translate(${cx},${cy})">`;
+  return `${g}
+    <path d="M0 -7 V5 M0 -2 L-4.5 3 M0 -2 L4.5 3 M0 0 L-3 6 M0 0 L3 6" fill="none" stroke="${stroke}" stroke-width="0.65" stroke-linecap="round" stroke-linejoin="round"/>
+    <ellipse cx="0" cy="6.5" rx="2" ry="1.4" fill="${fill}"/>
+  </g>`;
+}
+
+function spineLineBand(y1, stroke) {
+  return `
+    <line x1="10" y1="${y1}" x2="62" y2="${y1}" stroke="${stroke}" stroke-width="0.55"/>
+    <line x1="10" y1="${y1 + 4}" x2="62" y2="${y1 + 4}" stroke="${stroke}" stroke-width="0.55"/>
+    <line x1="10" y1="${y1 + 8}" x2="62" y2="${y1 + 8}" stroke="${stroke}" stroke-width="0.55"/>`;
+}
+
+function spineDiamondGrid(startY, rows, cols, stroke, fill) {
+  let html = '';
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cx = 14 + c * 22;
+      const cy = startY + r * 15;
+      html += `<polygon points="${cx},${cy} ${cx + 3.5},${cy + 5.5} ${cx},${cy + 11} ${cx - 3.5},${cy + 5.5}" fill="${fill}" stroke="${stroke}" stroke-width="0.35"/>`;
+    }
+  }
+  return html;
+}
+
+function getSpineTopOrnamentSvg(design, stroke, fill) {
+  const wrap = (body) =>
+    `<svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">${body}</svg>`;
+
   const topOrnaments = {
-    classic: `
-      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
-        <line x1="12" y1="18" x2="60" y2="18" stroke="${light}" stroke-width="1"/>
-        <line x1="12" y1="26" x2="60" y2="26" stroke="${light}" stroke-width="0.75"/>
-        <circle cx="11" cy="14" r="1.5" fill="${light}"/>
-        <circle cx="61" cy="14" r="1.5" fill="${light}"/>
-      </svg>`,
-    lined: `
-      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
-        <line x1="12" y1="22" x2="60" y2="22" stroke="${light}" stroke-width="1"/>
-        <line x1="12" y1="30" x2="60" y2="30" stroke="${light}" stroke-width="1"/>
-      </svg>`,
-    panel: `
-      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
-        <line x1="18" y1="26" x2="54" y2="26" stroke="${light}" stroke-width="1"/>
-      </svg>`,
-    diamond: `
-      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
-        <line x1="14" y1="18" x2="58" y2="18" stroke="${light}" stroke-width="0.75"/>
-        <line x1="14" y1="26" x2="58" y2="26" stroke="${light}" stroke-width="0.75"/>
-      </svg>`,
-    minimal: `
-      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
-        <line x1="18" y1="26" x2="54" y2="26" stroke="${light}" stroke-width="1"/>
-      </svg>`
+    classic: wrap(`
+      <rect x="5" y="6" width="62" height="42" fill="none" stroke="${stroke}" stroke-width="0.65"/>
+      <rect x="10" y="11" width="52" height="32" fill="none" stroke="${stroke}" stroke-width="0.5"/>
+      ${spineFleurDeLis(36, 24, stroke, fill, false)}`),
+    lined: wrap(spineLineBand(12, stroke)),
+    panel: wrap(`
+      <rect x="13" y="10" width="46" height="36" rx="3" fill="none" stroke="${stroke}" stroke-width="0.65"/>
+      <path d="M13 20 Q13 10 24 10" fill="none" stroke="${stroke}" stroke-width="0.55"/>
+      <path d="M59 20 Q59 10 48 10" fill="none" stroke="${stroke}" stroke-width="0.55"/>`),
+    diamond: wrap(spineDiamondGrid(10, 2, 3, stroke, fill)),
+    minimal: wrap(`
+      <rect x="8" y="8" width="56" height="32" rx="2" fill="none" stroke="${stroke}" stroke-width="0.6"/>
+      <ellipse cx="36" cy="22" rx="9" ry="4.5" fill="${fill}" stroke="${stroke}" stroke-width="0.5"/>`)
   };
   return topOrnaments[design] || topOrnaments.minimal;
 }
 
 function getSpinePatternSvg(design, titleLength) {
-  const light = 'rgba(255,255,255,0.15)';
+  const stroke = SPINE_STROKE;
+  const fill = SPINE_FILL;
   if (titleLength > SPINE_TITLE_ORNAMENT_MAX) {
-    return getSpineTopOrnamentSvg(design, light);
+    return getSpineTopOrnamentSvg(design, stroke, fill);
   }
 
+  const wrap = (body) =>
+    `<svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">${body}</svg>`;
+
   const patterns = {
-    classic: `
-      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
-        <rect x="7" y="10" width="58" height="220" fill="none" stroke="${light}" stroke-width="1.5"/>
-        <rect x="11" y="14" width="50" height="212" fill="none" stroke="${light}" stroke-width="0.75"/>
-        <circle cx="36" cy="120" r="9" fill="none" stroke="${light}" stroke-width="1"/>
-        <circle cx="36" cy="120" r="3" fill="${light}"/>
-        <circle cx="11" cy="14" r="1.5" fill="${light}"/>
-        <circle cx="61" cy="14" r="1.5" fill="${light}"/>
-        <circle cx="11" cy="226" r="1.5" fill="${light}"/>
-        <circle cx="61" cy="226" r="1.5" fill="${light}"/>
-      </svg>`,
-    lined: `
-      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
-        <line x1="12" y1="22" x2="60" y2="22" stroke="${light}" stroke-width="1"/>
-        <line x1="12" y1="30" x2="60" y2="30" stroke="${light}" stroke-width="1"/>
-        <line x1="12" y1="210" x2="60" y2="210" stroke="${light}" stroke-width="1"/>
-        <line x1="12" y1="218" x2="60" y2="218" stroke="${light}" stroke-width="1"/>
-      </svg>`,
-    panel: `
-      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
-        <rect x="14" y="48" width="44" height="144" rx="5" fill="none" stroke="${light}" stroke-width="1.25"/>
-        <rect x="18" y="52" width="36" height="136" rx="3" fill="none" stroke="${light}" stroke-width="0.75"/>
-      </svg>`,
-    diamond: `
-      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
-        <line x1="14" y1="78" x2="58" y2="78" stroke="${light}" stroke-width="0.75"/>
-        <line x1="14" y1="86" x2="58" y2="86" stroke="${light}" stroke-width="0.75"/>
-        <polygon points="36,102 46,120 36,138 26,120" fill="none" stroke="${light}" stroke-width="1"/>
-        <line x1="14" y1="154" x2="58" y2="154" stroke="${light}" stroke-width="0.75"/>
-        <line x1="14" y1="162" x2="58" y2="162" stroke="${light}" stroke-width="0.75"/>
-      </svg>`,
-    minimal: `
-      <svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">
-        <line x1="18" y1="26" x2="54" y2="26" stroke="${light}" stroke-width="1"/>
-      </svg>`
+    classic: wrap(`
+      <rect x="5" y="6" width="62" height="228" fill="none" stroke="${stroke}" stroke-width="0.7"/>
+      <rect x="10" y="11" width="52" height="218" fill="none" stroke="${stroke}" stroke-width="0.5"/>
+      ${spineFleurDeLis(36, 26, stroke, fill, false)}
+      ${spineFleurDeLis(36, 214, stroke, fill, true)}`),
+    lined: wrap(`
+      ${spineLineBand(12, stroke)}
+      ${spineLineBand(218, stroke)}
+      <polygon points="36,112 41,120 36,128 31,120" fill="${fill}" stroke="${stroke}" stroke-width="0.55"/>`),
+    panel: wrap(`
+      <rect x="12" y="40" width="48" height="160" rx="4" fill="rgba(255,255,255,0.06)" stroke="${stroke}" stroke-width="0.7"/>
+      <rect x="15" y="43" width="42" height="154" rx="3" fill="none" stroke="${stroke}" stroke-width="0.45"/>
+      <path d="M12 52 Q12 40 26 40" fill="none" stroke="${stroke}" stroke-width="0.55"/>
+      <path d="M60 52 Q60 40 46 40" fill="none" stroke="${stroke}" stroke-width="0.55"/>
+      <path d="M12 188 Q12 200 26 200" fill="none" stroke="${stroke}" stroke-width="0.55"/>
+      <path d="M60 188 Q60 200 46 200" fill="none" stroke="${stroke}" stroke-width="0.55"/>
+      <path d="M12 48 Q8 40 12 40" fill="none" stroke="${stroke}" stroke-width="0.45"/>
+      <path d="M60 48 Q64 40 60 40" fill="none" stroke="${stroke}" stroke-width="0.45"/>
+      <path d="M12 192 Q8 200 12 200" fill="none" stroke="${stroke}" stroke-width="0.45"/>
+      <path d="M60 192 Q64 200 60 200" fill="none" stroke="${stroke}" stroke-width="0.45"/>`),
+    diamond: wrap(`
+      ${spineDiamondGrid(8, 3, 3, stroke, fill)}
+      ${spineDiamondGrid(178, 3, 3, stroke, fill)}`),
+    minimal: wrap(`
+      <rect x="8" y="8" width="56" height="224" rx="2" fill="none" stroke="${stroke}" stroke-width="0.65"/>
+      <ellipse cx="36" cy="24" rx="10" ry="5" fill="${fill}" stroke="${stroke}" stroke-width="0.5"/>
+      <ellipse cx="36" cy="216" rx="10" ry="5" fill="${fill}" stroke="${stroke}" stroke-width="0.5"/>`)
   };
   return patterns[design] || patterns.minimal;
 }
