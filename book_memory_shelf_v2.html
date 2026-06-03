@@ -1187,7 +1187,10 @@ function getSpineDesignIndex(i) {
   return (i * 7 + 3) % SPINE_DESIGNS.length;
 }
 
-const SPINE_TITLE_ORNAMENT_MAX = 20;
+const SPINE_TITLE_ORNAMENT_MAX = 30;
+const SPINE_ORNAMENT_CENTER_X = 36;
+const SPINE_ORNAMENT_TOP_Y = 26;
+const SPINE_ORNAMENT_BOTTOM_Y = 214;
 const SPINE_FRAME_STROKE = 'rgba(255,255,255,0.35)';
 const SPINE_ORNAMENT = 'rgba(255,255,255,0.35)';
 
@@ -1227,16 +1230,23 @@ function spineOrnamentForDesign(design, cx, cy, flip) {
         <polygon points="0,-6 5,0 0,6 -5,0" fill="${o}" stroke="${o}" stroke-width="0.35"/>`);
     case 'minimal':
     default:
-      return `<circle cx="${cx}" cy="${cy}" r="3" fill="${o}"/>`;
+      return spineOrnamentGroup(cx, cy, flip, `<circle cx="0" cy="0" r="3" fill="${o}"/>`);
   }
 }
 
+function spineOrnamentsForDesign(design, titleLength) {
+  const showBottom = titleLength <= SPINE_TITLE_ORNAMENT_MAX;
+  const top = spineOrnamentForDesign(design, SPINE_ORNAMENT_CENTER_X, SPINE_ORNAMENT_TOP_Y, false);
+  const bottom = showBottom
+    ? spineOrnamentForDesign(design, SPINE_ORNAMENT_CENTER_X, SPINE_ORNAMENT_BOTTOM_Y, true)
+    : '';
+  return top + bottom;
+}
+
 function getSpinePatternSvg(design, titleLength) {
-  const longTitle = titleLength > SPINE_TITLE_ORNAMENT_MAX;
   const body = `
     ${spineDoubleBorderFrame(SPINE_FRAME_STROKE)}
-    ${spineOrnamentForDesign(design, 36, 26, false)}
-    ${longTitle ? '' : spineOrnamentForDesign(design, 36, 214, true)}`;
+    ${spineOrnamentsForDesign(design, titleLength)}`;
   return `<svg class="spine-pattern" viewBox="0 0 72 240" preserveAspectRatio="none" aria-hidden="true">${body}</svg>`;
 }
 
