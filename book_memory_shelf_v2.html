@@ -833,7 +833,7 @@ let currentBook = null;
 let currentBookIndex = -1;
 
 const QUIZ_API = '/api/quiz';
-const DESCRIPTION_API = '/api/description';
+const NO_DESCRIPTION_PLACEHOLDER = 'No description available for this book.';
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
 
 let quizQuestions = [];
@@ -1305,21 +1305,6 @@ function extractDescriptionFromDoc(doc) {
   return '';
 }
 
-async function fetchGeminiDescription(book) {
-  const res = await fetch(DESCRIPTION_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      title: book.title,
-      author: book.author || '',
-      genre: book.genre || ''
-    })
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Gemini description failed');
-  return (data.description || '').trim();
-}
-
 function setDetailDescription(text, loading) {
   const descEl = document.getElementById('detailDescription');
   if (loading) {
@@ -1420,16 +1405,7 @@ async function loadOpenLibraryDetail(book, index, spineColor) {
     const doc = await fetchOpenLibraryDoc(book);
     const coverI = doc?.cover_i ?? null;
     let description = extractDescriptionFromDoc(doc);
-
-    if (!description) {
-      console.log('No description in Open Library response, trying Gemini fallback');
-      try {
-        description = await fetchGeminiDescription(book);
-        console.log('Gemini fallback description:', description);
-      } catch (err) {
-        console.warn('Gemini description fallback failed:', err);
-      }
-    }
+    if (!description) description = NO_DESCRIPTION_PLACEHOLDER;
 
     if (coverI != null) {
       book.cachedCoverId = coverI;
@@ -1452,19 +1428,7 @@ async function loadOpenLibraryDetail(book, index, spineColor) {
       if (book.cachedDescription) {
         setDetailDescription(book.cachedDescription, false);
       } else {
-        try {
-          const description = await fetchGeminiDescription(book);
-          if (description) {
-            book.cachedDescription = description;
-            books[index].cachedDescription = description;
-            saveBooks();
-            setDetailDescription(description, false);
-          } else {
-            setDetailDescription('', false);
-          }
-        } catch {
-          setDetailDescription('', false);
-        }
+        setDetailDescription(NO_DESCRIPTION_PLACEHOLDER, false);
       }
     }
   }
