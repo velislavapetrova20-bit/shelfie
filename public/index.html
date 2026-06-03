@@ -52,8 +52,8 @@
   .book-spine { width: 72px; border-radius: 3px 3px 0 0; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease; transform-origin: bottom center; flex-shrink: 0; overflow: hidden; }
   .book-spine:hover { transform: translateY(-12px) scale(1.04); box-shadow: 4px 0 16px rgba(0,0,0,0.5); z-index: 10; }
   .spine-pattern { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-  .book-spine .spine-title { position: relative; z-index: 1; writing-mode: vertical-rl; transform: rotate(180deg); font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.5px; line-height: 1.3; max-height: 85%; padding: 12px 0; }
-  .book-spine.spine-long-title .spine-title { max-height: 92%; padding: 8px 0; }
+  .book-spine .spine-title { position: relative; z-index: 1; writing-mode: vertical-rl; transform: rotate(180deg); font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.5px; line-height: 1.3; max-height: calc(100% - 88px); padding: 0; }
+  .book-spine.spine-long-title .spine-title { max-height: calc(100% - 88px); }
 
   .add-btn { width: 72px; height: 220px; border: 2px dashed rgba(255,255,255,0.15); border-radius: 3px 3px 0 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 22px; transition: all 0.2s; flex-shrink: 0; }
   .add-btn:hover { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.6); }
@@ -1189,8 +1189,8 @@ function getSpineDesignIndex(i) {
 
 const SPINE_TITLE_ORNAMENT_MAX = 30;
 const SPINE_ORNAMENT_CENTER_X = 36;
-const SPINE_ORNAMENT_TOP_Y = 26;
-const SPINE_ORNAMENT_BOTTOM_Y = 214;
+const SPINE_ORNAMENT_TOP_Y = 20;
+const SPINE_ORNAMENT_BOTTOM_Y = 220;
 const SPINE_FRAME_STROKE = 'rgba(255,255,255,0.35)';
 const SPINE_ORNAMENT = 'rgba(255,255,255,0.35)';
 
@@ -1211,7 +1211,12 @@ function spineOrnamentForDesign(design, cx, cy, flip) {
   const o = SPINE_ORNAMENT;
   switch (design) {
     case 'classic':
-      return spineOrnamentGroup(cx, cy, flip, `
+      if (flip) {
+        return spineOrnamentGroup(cx, cy, false, `
+          <path d="M0 7 V-5 M0 2 L-4.5 -3 M0 2 L4.5 -3 M0 0 L-3 -6 M0 0 L3 -6" fill="none" stroke="${o}" stroke-width="0.65" stroke-linecap="round" stroke-linejoin="round"/>
+          <ellipse cx="0" cy="-6.5" rx="2" ry="1.4" fill="${o}"/>`);
+      }
+      return spineOrnamentGroup(cx, cy, false, `
         <path d="M0 -7 V5 M0 -2 L-4.5 3 M0 -2 L4.5 3 M0 0 L-3 6 M0 0 L3 6" fill="none" stroke="${o}" stroke-width="0.65" stroke-linecap="round" stroke-linejoin="round"/>
         <ellipse cx="0" cy="6.5" rx="2" ry="1.4" fill="${o}"/>`);
     case 'lined':
@@ -1235,7 +1240,8 @@ function spineOrnamentForDesign(design, cx, cy, flip) {
 }
 
 function spineOrnamentsForDesign(design, titleLength) {
-  const showBottom = titleLength <= SPINE_TITLE_ORNAMENT_MAX;
+  const alwaysShowBoth = design === 'classic';
+  const showBottom = alwaysShowBoth || titleLength <= SPINE_TITLE_ORNAMENT_MAX;
   const top = spineOrnamentForDesign(design, SPINE_ORNAMENT_CENTER_X, SPINE_ORNAMENT_TOP_Y, false);
   const bottom = showBottom
     ? spineOrnamentForDesign(design, SPINE_ORNAMENT_CENTER_X, SPINE_ORNAMENT_BOTTOM_Y, true)
