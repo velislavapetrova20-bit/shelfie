@@ -287,16 +287,15 @@
     height: 4px;
     border-radius: 12px 12px 0 0;
   }
-  .detail-close {
+  .detail-close,
+  .detail-edit {
     position: absolute;
     top: 1rem;
-    right: 1rem;
     width: 32px;
     height: 32px;
     border: none;
     background: #f5f5f5;
     color: #333;
-    font-size: 22px;
     line-height: 1;
     border-radius: 50%;
     cursor: pointer;
@@ -305,7 +304,25 @@
     justify-content: center;
     z-index: 3;
   }
-  .detail-close:hover { background: #ebebeb; }
+  .detail-close {
+    right: 1rem;
+    font-size: 22px;
+  }
+  .detail-edit {
+    right: calc(1rem + 32px + 8px);
+    padding: 0;
+  }
+  .detail-edit svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .detail-close:hover,
+  .detail-edit:hover { background: #ebebeb; }
   .detail-columns {
     display: grid;
     grid-template-columns: 65% 35%;
@@ -708,7 +725,7 @@
 <!-- ADD MODAL -->
 <div class="overlay" id="addOverlay">
   <div class="modal">
-    <div class="modal-title">Add a book</div>
+    <div class="modal-title" id="addModalTitle">Add a book</div>
     <div class="modal-sub">Look up a title or enter your own details</div>
     <div class="field-label">Title <span>*</span></div>
     <input type="text" id="inputTitle" placeholder="e.g. Pride and Prejudice" />
@@ -742,7 +759,7 @@
     </div>
     <div class="modal-actions">
       <button type="button" class="btn-modal-cancel" onclick="closeAddModal()">Cancel</button>
-      <button type="button" class="btn-detail-quiz btn-modal-submit" onclick="addBook()">Add to shelf</button>
+      <button type="button" class="btn-detail-quiz btn-modal-submit" id="addModalSubmit" onclick="addBook()">Add to shelf</button>
     </div>
   </div>
 </div>
@@ -751,6 +768,9 @@
 <div class="overlay" id="detailOverlay">
   <div class="detail-modal">
     <div class="detail-color-bar" id="detailColorBar"></div>
+    <button type="button" class="detail-edit" onclick="openEditModal()" aria-label="Edit book">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+    </button>
     <button type="button" class="detail-close" onclick="closeDetail()" aria-label="Close">&times;</button>
     <div class="detail-columns">
       <div class="detail-left">
@@ -831,6 +851,7 @@ let selectedColor = COLORS[0].bg;
 let customColors = [];
 let currentBook = null;
 let currentBookIndex = -1;
+let editingBookIndex = -1;
 
 const QUIZ_API = '/api/quiz';
 const DESCRIPTION_API = '/api/description';
@@ -1200,7 +1221,20 @@ function renderShelf(){
     books.length === 1 ? '1 book on your shelf' : `${books.length} books on your shelf`;
 }
 
+function updateAddModalMode() {
+  const isEdit = editingBookIndex >= 0;
+  document.getElementById('addModalTitle').textContent = isEdit ? 'Edit book' : 'Add a book';
+  document.getElementById('addModalSubmit').textContent = isEdit ? 'Save changes' : 'Add to shelf';
+}
+
+function ensureColorInPicker(color) {
+  if (!color || isPresetColor(color)) return;
+  if (!customColors.some(c => isSameColor(c, color))) customColors.push(color);
+}
+
 function openAddModal(){
+  editingBookIndex = -1;
+  updateAddModalMode();
   ['inputTitle','inputAuthor','inputGenre','iNotes'].forEach(id => document.getElementById(id).value = '');
   const fileInput = document.getElementById('iFile');
   if (fileInput) fileInput.value = '';
@@ -1211,7 +1245,34 @@ function openAddModal(){
   document.getElementById('addOverlay').classList.add('open');
   setTimeout(() => document.getElementById('inputTitle').focus(), 100);
 }
+
+function openEditModal() {
+  const i = currentBookIndex;
+  if (i < 0 || i >= books.length) return;
+  const book = books[i];
+  editingBookIndex = i;
+  updateAddModalMode();
+  document.getElementById('inputTitle').value = book.title || '';
+  document.getElementById('inputAuthor').value = book.author || '';
+  document.getElementById('inputGenre').value = book.genre || '';
+  document.getElementById('iNotes').value = book.notes || '';
+  const fileInput = document.getElementById('iFile');
+  if (fileInput) fileInput.value = '';
+  const fileLabelText = document.getElementById('fileLabelText');
+  if (fileLabelText) {
+    fileLabelText.textContent = book.uploadedFileName || 'Choose a file (PDF, EPUB, TXT, DOC)';
+  }
+  selectedColor = book.color || COLORS[i % COLORS.length].bg;
+  ensureColorInPicker(selectedColor);
+  renderColorPicker();
+  closeColorPickerPopup();
+  document.getElementById('addOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('inputTitle').focus(), 100);
+}
+
 function closeAddModal(){
+  editingBookIndex = -1;
+  updateAddModalMode();
   closeColorPickerPopup();
   document.getElementById('addOverlay').classList.remove('open');
 }
@@ -1230,15 +1291,76 @@ function handleFileUpload(event) {
   if (file.type === 'text/plain') reader.readAsText(file);
 }
 
+function refreshDetailAfterEdit(i) {
+  if (currentBookIndex !== i) return;
+  const book = books[i];
+  currentBook = book;
+  const spineColor = book.color || COLORS[i % COLORS.length].bg;
+
+  document.getElementById('detailTitle').textContent = book.title;
+  document.getElementById('detailAuthor').textContent = book.author || 'Unknown author';
+  renderGenrePills(book.genre);
+  document.getElementById('detailColorBar').style.background = spineColor;
+
+  const ns = document.getElementById('detailNotesSection');
+  if (book.notes) {
+    document.getElementById('detailNotes').textContent = book.notes;
+    ns.style.display = 'block';
+  } else {
+    ns.style.display = 'none';
+  }
+
+  const mockup = document.getElementById('detailCover');
+  const img = document.getElementById('detailCoverImg');
+  mockup.style.background = spineColor;
+  mockup.style.backgroundColor = spineColor;
+  document.getElementById('detailCoverTitle').textContent = book.title;
+  document.getElementById('detailCoverAuthor').textContent = book.author || '';
+  if (img.style.display !== 'block') {
+    mockup.style.display = 'flex';
+  }
+}
+
 function addBook(){
   const title = document.getElementById('inputTitle').value.trim();
   if(!title){ document.getElementById('inputTitle').focus(); return; }
+  const author = document.getElementById('inputAuthor').value.trim();
+  const genre = document.getElementById('inputGenre').value.trim();
+  const notes = document.getElementById('iNotes').value.trim();
+  const newFileName = document.getElementById('iFile').files[0]?.name || '';
+
+  if (editingBookIndex >= 0) {
+    const i = editingBookIndex;
+    const existing = books[i];
+    const titleChanged = existing.title !== title;
+    const authorChanged = existing.author !== author;
+    books[i] = {
+      ...existing,
+      title,
+      author,
+      genre,
+      notes,
+      uploadedFileName: newFileName || existing.uploadedFileName || '',
+      color: selectedColor
+    };
+    if (titleChanged || authorChanged) {
+      delete books[i].cachedDescription;
+      delete books[i].cachedCoverId;
+    }
+    saveBooks();
+    renderShelf();
+    closeAddModal();
+    refreshDetailAfterEdit(i);
+    showToast(`"${title}" updated`);
+    return;
+  }
+
   books.push({
     title,
-    author: document.getElementById('inputAuthor').value.trim(),
-    genre: document.getElementById('inputGenre').value.trim(),
-    notes: document.getElementById('iNotes').value.trim(),
-    uploadedFileName: document.getElementById('iFile').files[0]?.name || '',
+    author,
+    genre,
+    notes,
+    uploadedFileName: newFileName,
     color: selectedColor,
     added: Date.now()
   });
