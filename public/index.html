@@ -1233,6 +1233,7 @@ function ensureColorInPicker(color) {
 }
 
 function openAddModal(){
+  closeDetail();
   editingBookIndex = -1;
   updateAddModalMode();
   ['inputTitle','inputAuthor','inputGenre','iNotes'].forEach(id => document.getElementById(id).value = '');
@@ -1249,6 +1250,7 @@ function openAddModal(){
 function openEditModal() {
   const i = currentBookIndex;
   if (i < 0 || i >= books.length) return;
+  closeDetail();
   const book = books[i];
   editingBookIndex = i;
   updateAddModalMode();
@@ -1291,36 +1293,6 @@ function handleFileUpload(event) {
   if (file.type === 'text/plain') reader.readAsText(file);
 }
 
-function refreshDetailAfterEdit(i) {
-  if (currentBookIndex !== i) return;
-  const book = books[i];
-  currentBook = book;
-  const spineColor = book.color || COLORS[i % COLORS.length].bg;
-
-  document.getElementById('detailTitle').textContent = book.title;
-  document.getElementById('detailAuthor').textContent = book.author || 'Unknown author';
-  renderGenrePills(book.genre);
-  document.getElementById('detailColorBar').style.background = spineColor;
-
-  const ns = document.getElementById('detailNotesSection');
-  if (book.notes) {
-    document.getElementById('detailNotes').textContent = book.notes;
-    ns.style.display = 'block';
-  } else {
-    ns.style.display = 'none';
-  }
-
-  const mockup = document.getElementById('detailCover');
-  const img = document.getElementById('detailCoverImg');
-  mockup.style.background = spineColor;
-  mockup.style.backgroundColor = spineColor;
-  document.getElementById('detailCoverTitle').textContent = book.title;
-  document.getElementById('detailCoverAuthor').textContent = book.author || '';
-  if (img.style.display !== 'block') {
-    mockup.style.display = 'flex';
-  }
-}
-
 function addBook(){
   const title = document.getElementById('inputTitle').value.trim();
   if(!title){ document.getElementById('inputTitle').focus(); return; }
@@ -1350,7 +1322,7 @@ function addBook(){
     saveBooks();
     renderShelf();
     closeAddModal();
-    refreshDetailAfterEdit(i);
+    openDetail(i);
     showToast(`"${title}" updated`);
     return;
   }
