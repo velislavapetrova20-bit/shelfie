@@ -28,7 +28,7 @@ app.post('/api/description', async (req, res) => {
     const { title, author, genre } = req.body;
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       systemInstruction: 'Write exactly 2 sentences describing this book for a general reader. Plain text only — no markdown, titles, or labels.',
     });
     const userMessage = `Book: "${title}"${author ? ' by ' + author : ''}${genre ? '. Genre: ' + genre : ''}`;
@@ -51,7 +51,7 @@ app.post('/api/quiz', async (req, res) => {
     const { title, author, genre, notes } = req.body;
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       systemInstruction: QUIZ_SYSTEM,
     });
     const userMessage = `Book: "${title}"${author ? ' by ' + author : ''}${genre ? ', Genre: ' + genre : ''}${notes ? '. My notes: ' + notes : ''}`;
