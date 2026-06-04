@@ -735,7 +735,22 @@
   }
   .results-actions .btn-back-shelf:hover { background: #f5f5f5; border-color: #333333; }
 
-  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px); background: #2A1F14; color: #fff; font-size: 13px; padding: 10px 20px; border-radius: var(--border-radius-md); transition: transform 0.3s ease; z-index: 300; }
+  .toast {
+    position: fixed;
+    top: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: #ffffff;
+    color: #1a1a1a;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 12px 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transition: transform 0.3s ease;
+    z-index: 300;
+  }
   .toast.show { transform: translateX(-50%) translateY(0); }
 
   .loading-state { display: flex; align-items: center; gap: 8px; color: #666666; font-size: 13px; }
