@@ -11,10 +11,10 @@ A personal book memory shelf — add books, look up details from Open Library, a
    - **Add New Project** → import your Shelfie repo
    - Leave build settings as default (no build command needed)
 
-3. **Add your Gemini API key**
+3. **Add your Anthropic API key**
    - In the project: **Settings → Environment Variables**
-   - Name: `GEMINI_API_KEY`
-   - Value: paste your key exactly as provided (e.g. starting with `AQ.` — no prefix added by the app)
+   - Name: `ANTHROPIC_API_KEY`
+   - Value: paste your key (starts with `sk-ant-`)
    - Apply to Production, Preview, and Development
 
 4. **Deploy** — Vercel gives you a public URL like `https://shelfie-xxx.vercel.app`
@@ -26,7 +26,7 @@ Anyone can open that URL; quizzes call `/api/quiz` on the same domain (no local 
 ```bash
 npm install
 cp .env.example .env
-# Edit .env and set GEMINI_API_KEY=...
+# Edit .env and set ANTHROPIC_API_KEY=...
 
 npm start
 # Open http://localhost:3001

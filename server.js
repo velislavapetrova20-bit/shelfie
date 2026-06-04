@@ -3,7 +3,7 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Anthropic = require('@anthropic-ai/sdk');
 
 const app = express();
 const publicDir = path.join(__dirname, 'public');
@@ -14,26 +14,30 @@ app.use(express.static(publicDir));
 
 const QUIZ_SYSTEM = `You generate book memory quizzes. Return ONLY valid JSON, no markdown. Format: {"questions":[{"type":"Plot","question":"...","options":["A)...","B)...","C)...","D)..."],"correct":"A","explanation":"..."}]} — exactly 6 questions, last one type Reflection with no options (null).`;
 
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
 function isRateLimitError(e) {
   return e.status === 429 ||
-    /429|too many requests|resource_exhausted|rate limit/i.test(e.message || '');
+    /429|too many requests|rate limit|rate_limit/i.test(e.message || '');
 }
 
 app.post('/api/description', async (req, res) => {
-  if (!process.env.GEMINI_API_KEY) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY is not configured' });
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY is not configured' });
   }
 
   try {
     const { title, author, genre } = req.body;
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: 'Write exactly 2 sentences describing this book for a general reader. Plain text only — no markdown, titles, or labels.',
-    });
     const userMessage = `Book: "${title}"${author ? ' by ' + author : ''}${genre ? '. Genre: ' + genre : ''}`;
-    const result = await model.generateContent(userMessage);
-    const description = result.response.text().trim();
+    const message = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 256,
+      system: 'Write exactly 2 sentences describing this book for a general reader. Plain text only — no markdown, titles, or labels.',
+      messages: [{ role: 'user', content: userMessage }],
+    });
+    const description = message.content[0].text.trim();
     res.json({ description });
   } catch (e) {
     console.error('Description error:', e.message);
@@ -42,21 +46,21 @@ app.post('/api/description', async (req, res) => {
 });
 
 app.post('/api/quiz', async (req, res) => {
-  if (!process.env.GEMINI_API_KEY) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY is not configured' });
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY is not configured' });
   }
 
   console.log('Received request body:', req.body);
   try {
     const { title, author, genre, notes } = req.body;
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: QUIZ_SYSTEM,
-    });
     const userMessage = `Book: "${title}"${author ? ' by ' + author : ''}${genre ? ', Genre: ' + genre : ''}${notes ? '. My notes: ' + notes : ''}`;
-    const result = await model.generateContent(userMessage);
-    const text = result.response.text().replace(/```json|```/g, '').trim();
+    const message = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4096,
+      system: QUIZ_SYSTEM,
+      messages: [{ role: 'user', content: userMessage }],
+    });
+    const text = message.content[0].text.replace(/```json|```/g, '').trim();
     res.json(JSON.parse(text));
   } catch (e) {
     console.error('Error:', e.message);
