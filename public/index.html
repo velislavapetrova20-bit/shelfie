@@ -685,17 +685,55 @@
   .feedback-card.reflection { background: #f5f5f5; color: #333333; border: 1px solid #ddd; }
 
   /* RESULTS */
-  .results-body { padding: 0; text-align: center; }
+  .results-body { padding: 0; text-align: center; max-width: 720px; margin: 0 auto; width: 100%; }
   .results-score { font-family: 'Playfair Display', serif; font-size: 52px; font-weight: 600; color: #B85C38; line-height: 1; margin-bottom: 4px; }
   .results-label { font-size: 13px; color: #666666; margin-bottom: 1.5rem; }
   .results-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600; color: #000000; margin-bottom: 8px; }
-  .results-sub { font-size: 14px; color: #333333; line-height: 1.6; margin-bottom: 1.5rem; }
-  .results-breakdown { text-align: left; border-top: 0.5px solid var(--color-border-tertiary); padding-top: 1.25rem; margin-bottom: 1.5rem; }
-  .breakdown-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; font-size: 13px; color: #333333; line-height: 1.5; }
-  .breakdown-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .results-sub { font-size: 14px; color: #333333; line-height: 1.6; margin-bottom: 0; }
+  .results-breakdown { text-align: left; margin-top: 32px; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 8px; }
+  .breakdown-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f5f5f5;
+    border-radius: 8px;
+  }
+  .breakdown-tag {
+    flex-shrink: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #333333;
+    background: #ffffff;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid #e0e0e0;
+  }
+  .breakdown-line { flex: 1; height: 1px; background: #dddddd; min-width: 0; }
+  .breakdown-status { flex-shrink: 0; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; }
+  .breakdown-status--correct { color: #3a7d44; }
+  .breakdown-status--incorrect { color: #B85C38; }
+  .breakdown-status--reflection { color: #888888; }
   .results-actions { display: flex; flex-direction: column; gap: 10px; }
   .results-actions .btn-detail-quiz,
-  .results-actions .btn-secondary { width: 100%; text-align: center; }
+  .results-actions .btn-back-shelf { width: 100%; text-align: center; }
+  .results-actions .btn-back-shelf {
+    margin: 0;
+    padding: 13px 20px;
+    background: #ffffff;
+    color: #1a1a1a;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .results-actions .btn-back-shelf:hover { background: #f5f5f5; border-color: #333333; }
 
   .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px); background: #2A1F14; color: #fff; font-size: 13px; padding: 10px 20px; border-radius: var(--border-radius-md); transition: transform 0.3s ease; z-index: 300; }
   .toast.show { transform: translateX(-50%) translateY(0); }
@@ -1943,9 +1981,13 @@ function showResults() {
 
   const breakdown = quizQuestions.map((q, i) => {
     const s = quizScores[i];
-    const color = s === 'correct' ? '#639922' : s === 'partial' ? '#BA7517' : s === null ? '#888780' : '#A32D2D';
-    const label = s === null ? 'Reflected' : s.charAt(0).toUpperCase() + s.slice(1);
-    return `<div class="breakdown-item"><div class="breakdown-dot" style="background:${color}"></div><div><strong>${escapeHtml(q.type)}</strong> — ${label}</div></div>`;
+    const statusClass = s === null ? 'reflection' : s === 'correct' ? 'correct' : 'incorrect';
+    const label = s === null ? 'Reflected' : s === 'correct' ? 'Correct' : 'Incorrect';
+    return `<div class="breakdown-row">
+      <span class="breakdown-tag">${escapeHtml(q.type)}</span>
+      <span class="breakdown-line" aria-hidden="true"></span>
+      <span class="breakdown-status breakdown-status--${statusClass}">${label}</span>
+    </div>`;
   }).join('');
 
   document.getElementById('quizBody').innerHTML = `
@@ -1957,7 +1999,7 @@ function showResults() {
       <div class="results-breakdown">${breakdown}</div>
       <div class="results-actions">
         <button class="btn-detail-quiz" onclick="startQuiz()">Retry quiz</button>
-        <button class="btn-secondary" onclick="closeQuiz()">Back to shelf</button>
+        <button type="button" class="btn-back-shelf" onclick="closeQuiz()">Back to shelf</button>
       </div>
     </div>`;
 }
